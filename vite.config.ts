@@ -14,9 +14,9 @@ export default defineConfig({
       devOptions: { enabled: true },
       includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
       manifest: {
-        name: 'Clínica de Podologia',
-        short_name: 'Podologia',
-        description: 'Gestão da clínica de podologia: agenda, pacientes, prontuário e financeiro.',
+        name: 'Pés de Anjo · Podologia',
+        short_name: 'Pés de Anjo',
+        description: 'Gestão da clínica Pés de Anjo: agenda, pacientes, prontuário e financeiro.',
         lang: 'pt-BR',
         start_url: '/',
         scope: '/',

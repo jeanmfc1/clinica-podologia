@@ -27,8 +27,15 @@ export function LoginPage() {
 
   return (
     <div className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-6">
-      <h1 className="text-2xl font-bold text-brand-800">{clinica.nome}</h1>
-      <p className="mt-1 mb-6 text-slate-600">Entre para acessar a clínica.</p>
+      <img
+        src={clinica.logoUrl}
+        alt={`Logo ${clinica.nome}`}
+        className="mx-auto mb-4 h-28 w-auto"
+      />
+      <h1 className="text-center text-2xl font-bold text-brand-800">{clinica.nome}</h1>
+      <p className="mb-6 mt-1 text-center text-slate-600">
+        {clinica.profissional} · Podóloga
+      </p>
 
       {!supabaseConfigurado && (
         <div
