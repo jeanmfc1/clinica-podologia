@@ -1,15 +1,17 @@
+import { Link } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import { clinica } from '../config'
 
 export function MaisPage() {
   const { user, sair } = useAuth()
 
-  const itens = [
-    'Procedimentos',
-    'Estoque',
-    'Termos e consentimento',
-    'Relatórios',
-    'Configurações da clínica',
+  // Itens já prontos têm rota; os demais aparecem como "em breve".
+  const itens: { rotulo: string; para?: string }[] = [
+    { rotulo: 'Procedimentos', para: '/procedimentos' },
+    { rotulo: 'Estoque' },
+    { rotulo: 'Termos e consentimento' },
+    { rotulo: 'Relatórios' },
+    { rotulo: 'Configurações da clínica' },
   ]
 
   return (
@@ -18,15 +20,27 @@ export function MaisPage() {
       <p className="mt-1 text-slate-600">{clinica.nome}</p>
 
       <ul className="mt-4 divide-y divide-slate-200 rounded-lg border border-slate-200 bg-white">
-        {itens.map((item) => (
-          <li
-            key={item}
-            className="flex min-h-[52px] items-center justify-between px-4 text-slate-700"
-          >
-            {item}
-            <span className="text-slate-400">em breve</span>
-          </li>
-        ))}
+        {itens.map((item) =>
+          item.para ? (
+            <li key={item.rotulo}>
+              <Link
+                to={item.para}
+                className="flex min-h-[52px] items-center justify-between px-4 font-bold text-slate-800"
+              >
+                {item.rotulo}
+                <span className="text-slate-400">›</span>
+              </Link>
+            </li>
+          ) : (
+            <li
+              key={item.rotulo}
+              className="flex min-h-[52px] items-center justify-between px-4 text-slate-700"
+            >
+              {item.rotulo}
+              <span className="text-slate-400">em breve</span>
+            </li>
+          ),
+        )}
       </ul>
 
       <div className="mt-6 rounded-lg border border-slate-200 bg-white p-4">

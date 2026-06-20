@@ -37,3 +37,10 @@ export type Procedimento = {
   created_at: string
   updated_at: string
 }
+
+export type ProcedimentoInput = {
+  nome: string
+  preco: number
+  duracao_min: number
+  ativo?: boolean
+}

@@ -8,6 +8,8 @@ import { PlaceholderPage } from './pages/PlaceholderPage'
 import { PacientesPage } from './pages/PacientesPage'
 import { PacienteFormPage } from './pages/PacienteFormPage'
 import { PacienteDetalhePage } from './pages/PacienteDetalhePage'
+import { ProcedimentosPage } from './pages/ProcedimentosPage'
+import { ProcedimentoFormPage } from './pages/ProcedimentoFormPage'
 
 export default function App() {
   return (
@@ -51,6 +53,9 @@ export default function App() {
                   />
                 }
               />
+              <Route path="/procedimentos" element={<ProcedimentosPage />} />
+              <Route path="/procedimentos/novo" element={<ProcedimentoFormPage />} />
+              <Route path="/procedimentos/:id" element={<ProcedimentoFormPage />} />
               <Route path="/mais" element={<MaisPage />} />
             </Route>
           </Route>
