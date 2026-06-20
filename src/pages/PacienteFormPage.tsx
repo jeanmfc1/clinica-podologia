@@ -8,6 +8,7 @@ import {
 import type { PacienteInput } from '../lib/types'
 import { BotaoPrimario, Campo, inputClass, PageHeader } from '../components/ui'
 import { DateInputBR } from '../components/DateInputBR'
+import { TelefoneInput } from '../components/TelefoneInput'
 
 const vazio: PacienteInput = {
   nome: '',
@@ -93,12 +94,9 @@ export function PacienteFormPage() {
         </Campo>
 
         <Campo rotulo="Telefone / WhatsApp">
-          <input
-            type="tel"
-            inputMode="tel"
-            placeholder="(62) 99999-9999"
+          <TelefoneInput
             value={form.telefone ?? ''}
-            onChange={(e) => set('telefone', e.target.value)}
+            onChange={(digitos) => set('telefone', digitos)}
             className={inputClass}
           />
         </Campo>
