@@ -5,6 +5,9 @@ import { ProtectedRoute } from './components/ProtectedRoute'
 import { LoginPage } from './pages/LoginPage'
 import { MaisPage } from './pages/MaisPage'
 import { PlaceholderPage } from './pages/PlaceholderPage'
+import { PacientesPage } from './pages/PacientesPage'
+import { PacienteFormPage } from './pages/PacienteFormPage'
+import { PacienteDetalhePage } from './pages/PacienteDetalhePage'
 
 export default function App() {
   return (
@@ -26,15 +29,10 @@ export default function App() {
                   />
                 }
               />
-              <Route
-                path="/pacientes"
-                element={
-                  <PlaceholderPage
-                    titulo="Pacientes"
-                    descricao="Cadastro e histórico dos seus pacientes."
-                  />
-                }
-              />
+              <Route path="/pacientes" element={<PacientesPage />} />
+              <Route path="/pacientes/novo" element={<PacienteFormPage />} />
+              <Route path="/pacientes/:id" element={<PacienteDetalhePage />} />
+              <Route path="/pacientes/:id/editar" element={<PacienteFormPage />} />
               <Route
                 path="/atender"
                 element={
