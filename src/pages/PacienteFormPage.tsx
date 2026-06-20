@@ -7,6 +7,7 @@ import {
 } from '../features/pacientes/api'
 import type { PacienteInput } from '../lib/types'
 import { BotaoPrimario, Campo, inputClass, PageHeader } from '../components/ui'
+import { DateInputBR } from '../components/DateInputBR'
 
 const vazio: PacienteInput = {
   nome: '',
@@ -103,10 +104,9 @@ export function PacienteFormPage() {
         </Campo>
 
         <Campo rotulo="Data de nascimento">
-          <input
-            type="date"
+          <DateInputBR
             value={form.nascimento ?? ''}
-            onChange={(e) => set('nascimento', e.target.value)}
+            onChange={(iso) => set('nascimento', iso)}
             className={inputClass}
           />
         </Campo>
