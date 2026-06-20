@@ -44,11 +44,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user: session?.user ?? null,
       carregando,
       async entrar(email, senha) {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password: senha,
-        })
-        return { erro: error ? traduzErro(error.message) : null }
+        try {
+          const { error } = await supabase.auth.signInWithPassword({
+            email: email.trim(),
+            password: senha,
+          })
+          return { erro: error ? traduzErro(error.message) : null }
+        } catch {
+          // Falha de rede (sem internet, servidor fora do ar, etc.)
+          return {
+            erro: 'Sem conexão com o servidor. Verifique sua internet e tente de novo.',
+          }
+        }
       },
       async sair() {
         await supabase.auth.signOut()
@@ -62,13 +69,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 // Mensagens de erro mais amigáveis em português.
 function traduzErro(mensagem: string): string {
-  if (mensagem.includes('Invalid login credentials')) {
+  const m = mensagem.toLowerCase()
+  if (m.includes('invalid login credentials')) {
     return 'E-mail ou senha incorretos.'
   }
-  if (mensagem.includes('Email not confirmed')) {
+  if (m.includes('email not confirmed')) {
     return 'Confirme seu e-mail antes de entrar.'
   }
-  return 'Não foi possível entrar. Tente novamente.'
+  if (m.includes('rate limit') || m.includes('too many')) {
+    return 'Muitas tentativas. Espere alguns minutos e tente de novo.'
+  }
+  if (m.includes('failed to fetch') || m.includes('network')) {
+    return 'Sem conexão com o servidor. Verifique sua internet.'
+  }
+  // Mostra o motivo técnico para ajudar no diagnóstico.
+  return `Não foi possível entrar. (Detalhe: ${mensagem})`
 }
 
 // eslint-disable-next-line react-refresh/only-export-components
