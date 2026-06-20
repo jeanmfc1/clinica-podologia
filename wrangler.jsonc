@@ -1,0 +1,11 @@
+{
+  // Configuração para publicar o app (estático) na Cloudflare (Workers + Static Assets).
+  "name": "clinica-podologia",
+  "compatibility_date": "2026-06-01",
+  "assets": {
+    // Pasta gerada pelo "npm run build".
+    "directory": "./dist",
+    // Faz o roteamento do app (SPA) funcionar em qualquer endereço.
+    "not_found_handling": "single-page-application"
+  }
+}
