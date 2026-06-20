@@ -9,6 +9,7 @@ export function LoginPage() {
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [senha, setSenha] = useState('')
+  const [mostrarSenha, setMostrarSenha] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
   const [enviando, setEnviando] = useState(false)
 
@@ -66,14 +67,27 @@ export function LoginPage() {
 
         <label className="flex flex-col gap-1">
           <span className="font-bold text-slate-700">Senha</span>
-          <input
-            type="password"
-            autoComplete="current-password"
-            required
-            value={senha}
-            onChange={(e) => setSenha(e.target.value)}
-            className="min-h-[48px] rounded-lg border border-slate-300 bg-white px-3 text-base"
-          />
+          <div className="relative">
+            <input
+              type={mostrarSenha ? 'text' : 'password'}
+              autoComplete="current-password"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              required
+              value={senha}
+              onChange={(e) => setSenha(e.target.value)}
+              className="min-h-[48px] w-full rounded-lg border border-slate-300 bg-white pl-3 pr-20 text-base"
+            />
+            <button
+              type="button"
+              onClick={() => setMostrarSenha((v) => !v)}
+              aria-pressed={mostrarSenha}
+              className="absolute right-1 top-1 bottom-1 rounded-md px-3 text-sm font-bold text-brand-700"
+            >
+              {mostrarSenha ? 'Ocultar' : 'Mostrar'}
+            </button>
+          </div>
         </label>
 
         {erro && (
