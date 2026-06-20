@@ -20,7 +20,7 @@ export function ProcedimentoFormPage() {
 
   const [nome, setNome] = useState('')
   const [preco, setPreco] = useState('') // texto, aceita vírgula
-  const [duracao, setDuracao] = useState('30')
+  const [duracao, setDuracao] = useState('90')
   const [ativo, setAtivo] = useState(true)
   const [erro, setErro] = useState<string | null>(null)
 
