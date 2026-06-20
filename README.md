@@ -5,13 +5,15 @@ App de gestão para clínica de podologia, pensado para uso **no celular** como 
 
 > Inspirado no "Clínica Experts", porém enxuto para uma profissional manter sozinha.
 
+**No ar:** https://clinica-podologia.jeanmfcustodio.workers.dev
+
 ## Stack
 
 - **React + Vite + TypeScript + Tailwind CSS** (mobile-first)
 - **PWA** com `vite-plugin-pwa` (manifest + service worker)
 - **Supabase** (Postgres + Auth + Storage) — backend gerenciado
 - **TanStack Query** + **React Router**
-- Deploy na **Vercel**
+- Deploy na **Cloudflare** (Workers + Static Assets), via `wrangler.jsonc`
 
 ## Como rodar localmente
 
@@ -45,8 +47,8 @@ VITE_SUPABASE_ANON_KEY=SUA-CHAVE-ANON
 O arquivo `.env` **não é versionado** (está no `.gitignore`). Sem ele, o app roda
 mas o login fica desativado (mostra um aviso).
 
-> Para o deploy na Vercel, as mesmas variáveis devem ser cadastradas em
-> Project Settings → Environment Variables.
+> No deploy da Cloudflare, as mesmas variáveis ficam em
+> Workers & Pages → projeto → Settings → Variables and Secrets.
 
 ## Instalar no celular (PWA)
 
@@ -92,8 +94,8 @@ dados sensíveis.
 
 ## Status do projeto
 
-- [x] **Fase 0 — Esqueleto:** projeto rodando, PWA instalável, login (UI), navegação
-      por abas. _(Falta conectar Supabase e publicar na Vercel.)_
+- [x] **Fase 0 — Esqueleto:** projeto rodando, PWA instalável, login funcionando
+      (Supabase), navegação por abas, publicado na Cloudflare. **Concluída.**
 - [ ] **Fase 1 — MVP:** Pacientes, Procedimentos, Agenda, Prontuário (anamnese, mapa
       podológico, fotos).
 - [ ] **Fase 2:** Orçamentos, Financeiro, Estoque, Termos, lembrete por WhatsApp.
