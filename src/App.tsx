@@ -10,6 +10,8 @@ import { PacienteFormPage } from './pages/PacienteFormPage'
 import { PacienteDetalhePage } from './pages/PacienteDetalhePage'
 import { ProcedimentosPage } from './pages/ProcedimentosPage'
 import { ProcedimentoFormPage } from './pages/ProcedimentoFormPage'
+import { AgendaPage } from './pages/AgendaPage'
+import { AgendamentoFormPage } from './pages/AgendamentoFormPage'
 
 export default function App() {
   return (
@@ -22,15 +24,9 @@ export default function App() {
           <Route element={<ProtectedRoute />}>
             <Route element={<AppLayout />}>
               <Route index element={<Navigate to="/agenda" replace />} />
-              <Route
-                path="/agenda"
-                element={
-                  <PlaceholderPage
-                    titulo="Agenda"
-                    descricao="Suas consultas do dia e da semana."
-                  />
-                }
-              />
+              <Route path="/agenda" element={<AgendaPage />} />
+              <Route path="/agenda/novo" element={<AgendamentoFormPage />} />
+              <Route path="/agenda/:id" element={<AgendamentoFormPage />} />
               <Route path="/pacientes" element={<PacientesPage />} />
               <Route path="/pacientes/novo" element={<PacienteFormPage />} />
               <Route path="/pacientes/:id" element={<PacienteDetalhePage />} />

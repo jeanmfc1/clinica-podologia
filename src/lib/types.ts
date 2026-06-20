@@ -44,3 +44,39 @@ export type ProcedimentoInput = {
   duracao_min: number
   ativo?: boolean
 }
+
+export type StatusAgendamento =
+  | 'agendado'
+  | 'confirmado'
+  | 'atendido'
+  | 'faltou'
+  | 'cancelado'
+
+export type Agendamento = {
+  id: string
+  clinica_id: string
+  paciente_id: string | null
+  procedimento_id: string | null
+  profissional_id: string
+  inicio: string
+  fim: string
+  status: StatusAgendamento
+  observacao: string | null
+  created_at: string
+  updated_at: string
+}
+
+// Agendamento com nome do paciente e do procedimento (via join).
+export type AgendamentoComNomes = Agendamento & {
+  paciente: { nome: string } | null
+  procedimento: { nome: string; preco: number } | null
+}
+
+export type AgendamentoInput = {
+  paciente_id: string | null
+  procedimento_id: string | null
+  inicio: string
+  fim: string
+  status: StatusAgendamento
+  observacao?: string | null
+}
