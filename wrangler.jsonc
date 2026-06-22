@@ -9,5 +9,11 @@
     "not_found_handling": "single-page-application",
     // O Worker roda primeiro só nas rotas de API; o resto é servido como arquivo.
     "run_worker_first": ["/api/*"]
+  },
+  // Valores públicos (não-secretos). Os segredos vão por `wrangler secret put`.
+  "vars": {
+    "SUPABASE_URL": "https://byqxokwfzzmrbqsbibeg.supabase.co",
+    "GOOGLE_CLIENT_ID": "120896034412-ntab7csr53ugup1hireic78e4eajfgr3.apps.googleusercontent.com",
+    "APP_URL": "https://clinica-podologia.jeanmfcustodio.workers.dev"
   }
 }

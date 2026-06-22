@@ -12,6 +12,7 @@ import { ProcedimentosPage } from './pages/ProcedimentosPage'
 import { ProcedimentoFormPage } from './pages/ProcedimentoFormPage'
 import { AgendaPage } from './pages/AgendaPage'
 import { AgendamentoFormPage } from './pages/AgendamentoFormPage'
+import { GoogleAgendaPage } from './pages/GoogleAgendaPage'
 
 export default function App() {
   return (
@@ -52,6 +53,7 @@ export default function App() {
               <Route path="/procedimentos" element={<ProcedimentosPage />} />
               <Route path="/procedimentos/novo" element={<ProcedimentoFormPage />} />
               <Route path="/procedimentos/:id" element={<ProcedimentoFormPage />} />
+              <Route path="/google" element={<GoogleAgendaPage />} />
               <Route path="/mais" element={<MaisPage />} />
             </Route>
           </Route>

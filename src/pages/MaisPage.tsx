@@ -8,6 +8,7 @@ export function MaisPage() {
   // Itens já prontos têm rota; os demais aparecem como "em breve".
   const itens: { rotulo: string; para?: string }[] = [
     { rotulo: 'Procedimentos', para: '/procedimentos' },
+    { rotulo: 'Google Agenda', para: '/google' },
     { rotulo: 'Estoque' },
     { rotulo: 'Termos e consentimento' },
     { rotulo: 'Relatórios' },
