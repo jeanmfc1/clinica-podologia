@@ -30,6 +30,42 @@ export function useAgendamentosDoDia(dataISO: string) {
   })
 }
 
+// Agendamentos num intervalo (usado por mês e semana). Datas em ISO/UTC.
+export function useAgendamentosIntervalo(iniISO: string, fimISO: string) {
+  return useQuery({
+    queryKey: [CHAVE, 'intervalo', iniISO, fimISO],
+    queryFn: async (): Promise<AgendamentoComNomes[]> => {
+      const { data, error } = await supabase
+        .from('agendamentos')
+        .select(SELECT)
+        .gte('inicio', iniISO)
+        .lt('inicio', fimISO)
+        .order('inicio')
+      if (error) throw error
+      return (data ?? []) as unknown as AgendamentoComNomes[]
+    },
+  })
+}
+
+// Próximos agendamentos a partir de agora (ignora cancelados).
+export function useProximosAgendamentos(limite = 10) {
+  return useQuery({
+    queryKey: [CHAVE, 'proximos', limite],
+    queryFn: async (): Promise<AgendamentoComNomes[]> => {
+      const agora = new Date().toISOString()
+      const { data, error } = await supabase
+        .from('agendamentos')
+        .select(SELECT)
+        .gte('inicio', agora)
+        .neq('status', 'cancelado')
+        .order('inicio')
+        .limit(limite)
+      if (error) throw error
+      return (data ?? []) as unknown as AgendamentoComNomes[]
+    },
+  })
+}
+
 export function useAgendamento(id: string | undefined) {
   return useQuery({
     queryKey: [CHAVE, id],
