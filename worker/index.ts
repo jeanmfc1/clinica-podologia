@@ -175,8 +175,14 @@ export default {
         return paginaSimples('Erro na conexão', 'Link inválido. Tente conectar de novo.', env.APP_URL + '/mais')
 
       const tk = await trocarCodigo(env, code)
-      if (!tk.access_token)
-        return paginaSimples('Erro na conexão', 'Não foi possível obter o acesso. Tente de novo.', env.APP_URL + '/mais')
+      if (!tk.access_token) {
+        console.log('google token error:', JSON.stringify(tk))
+        return paginaSimples(
+          'Erro na conexão',
+          'O Google recusou a troca do código. Detalhe: ' + (tk.error || 'desconhecido'),
+          env.APP_URL + '/google',
+        )
+      }
 
       const exp = new Date(Date.now() + (tk.expires_in ?? 3600) * 1000).toISOString()
       const email = emailDoIdToken(tk.id_token)
@@ -191,13 +197,22 @@ export default {
       // refresh_token só vem na 1ª autorização; se vier, salva.
       if (tk.refresh_token) registro.refresh_token = tk.refresh_token
 
-      await sb(env, 'google_integracao?on_conflict=clinica_id', {
+      const up = await sb(env, 'google_integracao?on_conflict=clinica_id', {
         method: 'POST',
         headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
         body: JSON.stringify(registro),
       })
+      if (!up.ok) {
+        const corpo = await up.text()
+        console.log('upsert error:', up.status, corpo)
+        return paginaSimples(
+          'Erro ao salvar',
+          `Não foi possível salvar a conexão (${up.status}). ${corpo}`,
+          env.APP_URL + '/google',
+        )
+      }
 
-      return Response.redirect(`${env.APP_URL}/mais?google=conectado`, 302)
+      return Response.redirect(`${env.APP_URL}/google?google=conectado`, 302)
     }
 
     // Status da conexão (para o app mostrar conectado/desconectado).

@@ -38,6 +38,9 @@ export default defineConfig({
         // Cache do "app shell" para leitura básica offline.
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
         navigateFallback: 'index.html',
+        // NÃO interceptar as rotas do backend (ex.: retorno do Google OAuth).
+        // Sem isto, o service worker serve o app no lugar do callback.
+        navigateFallbackDenylist: [/^\/api\//],
       },
     }),
   ],
