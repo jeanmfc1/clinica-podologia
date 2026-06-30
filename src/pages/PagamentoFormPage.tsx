@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import {
+  CATEGORIAS,
   FORMAS,
   useAtualizarPagamento,
   useCriarPagamento,
@@ -8,13 +9,12 @@ import {
   usePagamento,
 } from '../features/financeiro/api'
 import { usePacientes } from '../features/pacientes/api'
-import type { FormaPagamento } from '../lib/types'
+import type { FormaPagamento, StatusPagamento, TipoLancamento } from '../lib/types'
 import { combinarDataHora, dataLocalISO, hojeISO } from '../lib/format'
 import { BotaoPrimario, Campo, inputClass, PageHeader } from '../components/ui'
 import { DateInputBR } from '../components/DateInputBR'
 
 function parseValor(txt: string): number {
-  // Aceita "140", "140,50" ou "140.50".
   const limpo = txt.replace(/\s/g, '').replace(/\./g, '').replace(',', '.')
   const n = parseFloat(limpo)
   return isNaN(n) ? NaN : n
@@ -32,8 +32,12 @@ export function PagamentoFormPage() {
   const atualizar = useAtualizarPagamento()
   const excluir = useExcluirPagamento()
 
+  const [tipo, setTipo] = useState<TipoLancamento>('entrada')
   const [valor, setValor] = useState(params.get('valor') || '')
+  const [categoria, setCategoria] = useState('')
   const [forma, setForma] = useState<FormaPagamento>('dinheiro')
+  const [status, setStatus] = useState<StatusPagamento>('pago')
+  const [vencimento, setVencimento] = useState('')
   const [data, setData] = useState(hojeISO())
   const [pacienteId, setPacienteId] = useState(params.get('paciente') || '')
   const [descricao, setDescricao] = useState('')
@@ -43,8 +47,12 @@ export function PagamentoFormPage() {
 
   useEffect(() => {
     if (pagamento) {
+      setTipo(pagamento.tipo)
       setValor(String(pagamento.valor).replace('.', ','))
+      setCategoria(pagamento.categoria ?? '')
       setForma(pagamento.forma)
+      setStatus(pagamento.status)
+      setVencimento(pagamento.vencimento ?? '')
       setData(dataLocalISO(pagamento.data))
       setPacienteId(pagamento.paciente_id ?? '')
       setDescricao(pagamento.descricao ?? '')
@@ -58,8 +66,12 @@ export function PagamentoFormPage() {
     if (isNaN(v) || v <= 0) return setErro('Informe um valor válido.')
 
     const input = {
+      tipo,
       valor: v,
+      categoria: categoria.trim() || null,
       forma,
+      status,
+      vencimento: status === 'pendente' ? vencimento || null : null,
       data: combinarDataHora(data, '12:00'),
       paciente_id: pacienteId || null,
       descricao: descricao.trim() || null,
@@ -75,18 +87,45 @@ export function PagamentoFormPage() {
   }
 
   async function aoExcluir() {
-    if (!confirm('Excluir este pagamento?')) return
+    if (!confirm('Excluir este lançamento?')) return
     await excluir.mutateAsync(id!)
     navigate('/financeiro', { replace: true })
   }
 
   const salvando = criar.isPending || atualizar.isPending
+  const entrada = tipo === 'entrada'
 
   return (
     <section>
-      <PageHeader titulo={editando ? 'Editar pagamento' : 'Novo pagamento'} voltar />
+      <PageHeader titulo={editando ? 'Editar lançamento' : 'Novo lançamento'} voltar />
 
       <form onSubmit={aoEnviar} className="flex flex-col gap-4">
+        {/* Entrada ou saída */}
+        <div className="grid grid-cols-2 gap-1 rounded-lg bg-slate-100 p-1">
+          {(
+            [
+              ['entrada', 'Entrada (entrou)'],
+              ['saida', 'Saída (gasto)'],
+            ] as [TipoLancamento, string][]
+          ).map(([t, rotulo]) => (
+            <button
+              key={t}
+              type="button"
+              onClick={() => setTipo(t)}
+              className={
+                'min-h-[44px] rounded-md font-bold ' +
+                (tipo === t
+                  ? t === 'entrada'
+                    ? 'bg-white text-green-700 shadow-sm'
+                    : 'bg-white text-red-700 shadow-sm'
+                  : 'text-slate-500')
+              }
+            >
+              {rotulo}
+            </button>
+          ))}
+        </div>
+
         <Campo rotulo="Valor (R$) *">
           <input
             inputMode="decimal"
@@ -95,6 +134,21 @@ export function PagamentoFormPage() {
             placeholder="0,00"
             className={inputClass}
           />
+        </Campo>
+
+        <Campo rotulo="Categoria">
+          <input
+            list="categorias-lista"
+            value={categoria}
+            onChange={(e) => setCategoria(e.target.value)}
+            placeholder={entrada ? 'Ex.: Consulta, Produto…' : 'Ex.: Material, Aluguel…'}
+            className={inputClass}
+          />
+          <datalist id="categorias-lista">
+            {CATEGORIAS[tipo].map((c) => (
+              <option key={c} value={c} />
+            ))}
+          </datalist>
         </Campo>
 
         <Campo rotulo="Forma de pagamento">
@@ -111,7 +165,37 @@ export function PagamentoFormPage() {
           </select>
         </Campo>
 
-        <Campo rotulo="Data">
+        {/* Pago ou fiado */}
+        <Campo rotulo="Situação">
+          <div className="grid grid-cols-2 gap-1 rounded-lg bg-slate-100 p-1">
+            {(
+              [
+                ['pago', entrada ? 'Recebido' : 'Pago'],
+                ['pendente', entrada ? 'Fiado (a receber)' : 'A pagar'],
+              ] as [StatusPagamento, string][]
+            ).map(([s, rotulo]) => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => setStatus(s)}
+                className={
+                  'min-h-[44px] rounded-md font-bold ' +
+                  (status === s ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-500')
+                }
+              >
+                {rotulo}
+              </button>
+            ))}
+          </div>
+        </Campo>
+
+        {status === 'pendente' && (
+          <Campo rotulo={entrada ? 'Data pra receber' : 'Data pra pagar'}>
+            <DateInputBR value={vencimento} onChange={setVencimento} className={inputClass} />
+          </Campo>
+        )}
+
+        <Campo rotulo="Data do lançamento">
           <DateInputBR value={data} onChange={setData} className={inputClass} />
         </Campo>
 
@@ -134,7 +218,7 @@ export function PagamentoFormPage() {
           <input
             value={descricao}
             onChange={(e) => setDescricao(e.target.value)}
-            placeholder="Ex.: consulta, produto…"
+            placeholder="Observação…"
             className={inputClass}
           />
         </Campo>
@@ -155,7 +239,7 @@ export function PagamentoFormPage() {
             onClick={aoExcluir}
             className="min-h-[44px] rounded-lg border border-red-300 px-4 font-bold text-red-700"
           >
-            Excluir pagamento
+            Excluir lançamento
           </button>
         )}
       </form>

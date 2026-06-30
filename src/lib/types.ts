@@ -107,15 +107,21 @@ export type AtendimentoInput = {
 
 // ----- Financeiro -----
 export type FormaPagamento = 'dinheiro' | 'pix' | 'credito' | 'debito' | 'outro'
+export type TipoLancamento = 'entrada' | 'saida'
+export type StatusPagamento = 'pago' | 'pendente' // pendente = fiado / a receber
 
 export type Pagamento = {
   id: string
   clinica_id: string
   agendamento_id: string | null
   paciente_id: string | null
+  tipo: TipoLancamento
+  categoria: string | null
   descricao: string | null
   valor: number
   forma: FormaPagamento
+  status: StatusPagamento
+  vencimento: string | null // 'YYYY-MM-DD' (data pra receber/pagar)
   data: string
   created_at: string
 }
@@ -127,9 +133,13 @@ export type PagamentoComPaciente = Pagamento & {
 export type PagamentoInput = {
   paciente_id?: string | null
   agendamento_id?: string | null
+  tipo: TipoLancamento
+  categoria?: string | null
   descricao?: string | null
   valor: number
   forma: FormaPagamento
+  status: StatusPagamento
+  vencimento?: string | null
   data: string
 }
 

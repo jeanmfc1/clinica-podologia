@@ -5,6 +5,7 @@ import type {
   Pagamento,
   PagamentoComPaciente,
   PagamentoInput,
+  TipoLancamento,
 } from '../../lib/types'
 
 const CHAVE = 'pagamentos'
@@ -22,7 +23,13 @@ export function rotuloForma(f: FormaPagamento): string {
   return FORMAS.find((x) => x.valor === f)?.rotulo ?? f
 }
 
-// Pagamentos num intervalo (ISO/UTC), mais recentes primeiro.
+// Sugestões de categoria (o campo é livre; isto só ajuda).
+export const CATEGORIAS: Record<TipoLancamento, string[]> = {
+  entrada: ['Consulta', 'Produto', 'Outro'],
+  saida: ['Material', 'Produto', 'Aluguel', 'Equipamento', 'Transporte', 'Outro'],
+}
+
+// Lançamentos num intervalo (ISO/UTC), mais recentes primeiro.
 export function usePagamentosIntervalo(iniISO: string, fimISO: string) {
   return useQuery({
     queryKey: [CHAVE, 'intervalo', iniISO, fimISO],
@@ -33,6 +40,22 @@ export function usePagamentosIntervalo(iniISO: string, fimISO: string) {
         .gte('data', iniISO)
         .lt('data', fimISO)
         .order('data', { ascending: false })
+      if (error) throw error
+      return (data ?? []) as unknown as PagamentoComPaciente[]
+    },
+  })
+}
+
+// Tudo que está em aberto (fiado / a receber), mais próximo do vencimento primeiro.
+export function usePendentes() {
+  return useQuery({
+    queryKey: [CHAVE, 'pendentes'],
+    queryFn: async (): Promise<PagamentoComPaciente[]> => {
+      const { data, error } = await supabase
+        .from('pagamentos')
+        .select(SELECT)
+        .eq('status', 'pendente')
+        .order('vencimento', { ascending: true, nullsFirst: false })
       if (error) throw error
       return (data ?? []) as unknown as PagamentoComPaciente[]
     },
@@ -74,6 +97,21 @@ export function useAtualizarPagamento() {
         .from('pagamentos')
         .update(args.input)
         .eq('id', args.id)
+      if (error) throw error
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: [CHAVE] }),
+  })
+}
+
+// Marca um fiado como recebido hoje (entra no caixa do dia).
+export function useMarcarRecebido() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('pagamentos')
+        .update({ status: 'pago', data: new Date().toISOString() })
+        .eq('id', id)
       if (error) throw error
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: [CHAVE] }),
