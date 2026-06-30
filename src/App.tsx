@@ -18,6 +18,7 @@ import { AnamneseFormPage } from './pages/AnamneseFormPage'
 import { AgendarPublicoPage } from './pages/AgendarPublicoPage'
 import { FinanceiroPage } from './pages/FinanceiroPage'
 import { PagamentoFormPage } from './pages/PagamentoFormPage'
+import { InicioPage } from './pages/InicioPage'
 
 export default function App() {
   return (
@@ -31,7 +32,8 @@ export default function App() {
           {/* Rotas internas exigem login. */}
           <Route element={<ProtectedRoute />}>
             <Route element={<AppLayout />}>
-              <Route index element={<Navigate to="/agenda" replace />} />
+              <Route index element={<Navigate to="/inicio" replace />} />
+              <Route path="/inicio" element={<InicioPage />} />
               <Route path="/agenda" element={<AgendaPage />} />
               <Route path="/agenda/novo" element={<AgendamentoFormPage />} />
               <Route path="/agenda/:id" element={<AgendamentoFormPage />} />
@@ -60,7 +62,7 @@ export default function App() {
             </Route>
           </Route>
 
-          <Route path="*" element={<Navigate to="/agenda" replace />} />
+          <Route path="*" element={<Navigate to="/inicio" replace />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

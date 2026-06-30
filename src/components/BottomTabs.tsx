@@ -10,6 +10,15 @@ type Tab = {
 // Ícones simples em SVG (sem dependência externa). currentColor herda a cor do link.
 const tabs: Tab[] = [
   {
+    para: '/inicio',
+    rotulo: 'Início',
+    icone: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+        <path d="M3 11l9-8 9 8M5 10v10h14V10" />
+      </svg>
+    ),
+  },
+  {
     para: '/agenda',
     rotulo: 'Agenda',
     icone: (
@@ -64,7 +73,7 @@ export function BottomTabs() {
   return (
     <nav
       aria-label="Navegação principal"
-      className="sticky bottom-0 z-10 grid grid-cols-5 border-t border-slate-200 bg-white"
+      className="sticky bottom-0 z-10 grid grid-cols-6 border-t border-slate-200 bg-white"
     >
       {tabs.map((tab) => (
         <NavLink
@@ -73,7 +82,7 @@ export function BottomTabs() {
           className={({ isActive }) =>
             [
               // Alvo de toque alto (>= 44px) e legível.
-              'flex min-h-[60px] flex-col items-center justify-center gap-1 text-xs font-bold',
+              'flex min-h-[60px] flex-col items-center justify-center gap-1 text-[10px] font-bold',
               isActive ? 'text-brand-700' : 'text-slate-500',
             ].join(' ')
           }
