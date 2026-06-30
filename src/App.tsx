@@ -4,7 +4,6 @@ import { AppLayout } from './components/AppLayout'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { LoginPage } from './pages/LoginPage'
 import { MaisPage } from './pages/MaisPage'
-import { PlaceholderPage } from './pages/PlaceholderPage'
 import { PacientesPage } from './pages/PacientesPage'
 import { PacienteFormPage } from './pages/PacienteFormPage'
 import { PacienteDetalhePage } from './pages/PacienteDetalhePage'
@@ -17,6 +16,8 @@ import { AtenderPage } from './pages/AtenderPage'
 import { AtendimentoFormPage } from './pages/AtendimentoFormPage'
 import { AnamneseFormPage } from './pages/AnamneseFormPage'
 import { AgendarPublicoPage } from './pages/AgendarPublicoPage'
+import { FinanceiroPage } from './pages/FinanceiroPage'
+import { PagamentoFormPage } from './pages/PagamentoFormPage'
 
 export default function App() {
   return (
@@ -48,15 +49,9 @@ export default function App() {
                 element={<AtendimentoFormPage />}
               />
               <Route path="/atender" element={<AtenderPage />} />
-              <Route
-                path="/financeiro"
-                element={
-                  <PlaceholderPage
-                    titulo="Financeiro"
-                    descricao="Receitas, despesas e fluxo de caixa."
-                  />
-                }
-              />
+              <Route path="/financeiro" element={<FinanceiroPage />} />
+              <Route path="/financeiro/novo" element={<PagamentoFormPage />} />
+              <Route path="/financeiro/:id" element={<PagamentoFormPage />} />
               <Route path="/procedimentos" element={<ProcedimentosPage />} />
               <Route path="/procedimentos/novo" element={<ProcedimentoFormPage />} />
               <Route path="/procedimentos/:id" element={<ProcedimentoFormPage />} />

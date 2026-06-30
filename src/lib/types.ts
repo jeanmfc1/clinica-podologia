@@ -105,6 +105,34 @@ export type AtendimentoInput = {
   evolucao?: string | null
 }
 
+// ----- Financeiro -----
+export type FormaPagamento = 'dinheiro' | 'pix' | 'credito' | 'debito' | 'outro'
+
+export type Pagamento = {
+  id: string
+  clinica_id: string
+  agendamento_id: string | null
+  paciente_id: string | null
+  descricao: string | null
+  valor: number
+  forma: FormaPagamento
+  data: string
+  created_at: string
+}
+
+export type PagamentoComPaciente = Pagamento & {
+  paciente: { nome: string } | null
+}
+
+export type PagamentoInput = {
+  paciente_id?: string | null
+  agendamento_id?: string | null
+  descricao?: string | null
+  valor: number
+  forma: FormaPagamento
+  data: string
+}
+
 // Foto clínica (antes/depois) ligada a um atendimento.
 export type FotoClinica = {
   id: string

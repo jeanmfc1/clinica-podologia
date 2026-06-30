@@ -218,6 +218,15 @@ export function AgendamentoFormPage() {
         )}
 
         {editando && (
+          <Link
+            to={`/financeiro/novo?agendamento=${id}${pacienteId ? `&paciente=${pacienteId}` : ''}${procEscolhido ? `&valor=${procEscolhido.preco}` : ''}`}
+            className="flex min-h-[48px] items-center justify-center rounded-lg border-2 border-green-600 px-4 font-bold text-green-700"
+          >
+            Registrar pagamento
+          </Link>
+        )}
+
+        {editando && (
           <button
             type="button"
             onClick={aoExcluir}
