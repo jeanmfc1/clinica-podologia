@@ -5,6 +5,7 @@ import {
   useAtualizarAgendamento,
   useCriarAgendamento,
   useExcluirAgendamento,
+  useMudarStatus,
 } from '../features/agenda/api'
 import { usePacientes } from '../features/pacientes/api'
 import { useProcedimentos } from '../features/procedimentos/api'
@@ -31,6 +32,7 @@ export function AgendamentoFormPage() {
   const criar = useCriarAgendamento()
   const atualizar = useAtualizarAgendamento()
   const excluir = useExcluirAgendamento()
+  const mudarStatus = useMudarStatus()
 
   const [pacienteId, setPacienteId] = useState(params.get('paciente') || '')
   const [procedimentoId, setProcedimentoId] = useState('')
@@ -94,6 +96,13 @@ export function AgendamentoFormPage() {
     if (!confirm('Excluir esta consulta?')) return
     await excluir.mutateAsync(id!)
     navigate('/agenda', { replace: true })
+  }
+
+  // Confirma a consulta num toque (também envia pro Google).
+  async function aoConfirmar() {
+    await mudarStatus.mutateAsync({ id: id!, status: 'confirmado' })
+    setStatus('confirmado')
+    navigate(`/agenda?dia=${data}`, { replace: true })
   }
 
   const salvando = criar.isPending || atualizar.isPending
@@ -182,6 +191,17 @@ export function AgendamentoFormPage() {
           <p role="alert" className="font-bold text-red-700">
             {erro}
           </p>
+        )}
+
+        {editando && status === 'agendado' && (
+          <button
+            type="button"
+            onClick={aoConfirmar}
+            disabled={mudarStatus.isPending}
+            className="flex min-h-[48px] items-center justify-center rounded-lg bg-green-600 px-4 font-bold text-white"
+          >
+            {mudarStatus.isPending ? 'Confirmando…' : '✓ Confirmar consulta'}
+          </button>
         )}
 
         <BotaoPrimario type="submit" disabled={salvando}>
