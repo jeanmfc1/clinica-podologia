@@ -20,6 +20,14 @@ import {
 import { BotaoPrimario, Campo, inputClass, PageHeader } from '../components/ui'
 import { DateInputBR } from '../components/DateInputBR'
 
+// Foto escolhida mas ainda não enviada (fica em espera até salvar).
+type FotoPendente = {
+  localId: string
+  file: File
+  momento: 'antes' | 'depois'
+  preview: string
+}
+
 export function AtendimentoFormPage() {
   const { id, atId } = useParams() // id = paciente; atId = atendimento (ao editar)
   const editando = !!atId
@@ -44,24 +52,32 @@ export function AtendimentoFormPage() {
   const [evolucao, setEvolucao] = useState('')
   const [erro, setErro] = useState<string | null>(null)
   const [momento, setMomento] = useState<'antes' | 'depois'>('antes')
+  const [pendentes, setPendentes] = useState<FotoPendente[]>([])
+  const [salvando, setSalvando] = useState(false)
   const inputFoto = useRef<HTMLInputElement>(null)
 
-  async function aoEscolherFotos(e: React.ChangeEvent<HTMLInputElement>) {
+  // Escolher fotos: ficam em espera (com preview) até salvar o atendimento.
+  function aoEscolherFotos(e: React.ChangeEvent<HTMLInputElement>) {
     const arquivos = Array.from(e.target.files ?? [])
-    e.target.value = '' // permite reenviar o mesmo arquivo depois
-    if (!arquivos.length || !atId || !atendimento) return
-    try {
-      for (const file of arquivos) {
-        await enviarFoto.mutateAsync({
-          clinicaId: atendimento.clinica_id,
-          atendimentoId: atId,
-          file,
-          momento,
-        })
-      }
-    } catch {
-      setErro('Não foi possível enviar a foto. Tente de novo.')
-    }
+    e.target.value = ''
+    if (!arquivos.length) return
+    setPendentes((lista) => [
+      ...lista,
+      ...arquivos.map((file) => ({
+        localId: crypto.randomUUID(),
+        file,
+        momento,
+        preview: URL.createObjectURL(file),
+      })),
+    ])
+  }
+
+  function removerPendente(localId: string) {
+    setPendentes((lista) => {
+      const alvo = lista.find((p) => p.localId === localId)
+      if (alvo) URL.revokeObjectURL(alvo.preview)
+      return lista.filter((p) => p.localId !== localId)
+    })
   }
 
   // Preenche ao editar.
@@ -80,23 +96,44 @@ export function AtendimentoFormPage() {
     if (!id) return setErro('Paciente não identificado.')
 
     const dataHora = combinarDataHora(data, hora)
+    setSalvando(true)
     try {
+      // 1) Cria ou atualiza o atendimento (e descobre o id + a clínica).
+      let atendimentoId = atId
+      let clinicaId = atendimento?.clinica_id
       if (editando) {
         await atualizar.mutateAsync({
           id: atId!,
           input: { data: dataHora, evolucao: evolucao.trim() },
         })
       } else {
-        await criar.mutateAsync({
+        const novo = await criar.mutateAsync({
           paciente_id: id,
           agendamento_id: agendamentoId,
           data: dataHora,
           evolucao: evolucao.trim(),
         })
+        atendimentoId = novo.id
+        clinicaId = novo.clinica_id
       }
+
+      // 2) Envia as fotos que estavam em espera.
+      if (atendimentoId && clinicaId) {
+        for (const p of pendentes) {
+          await enviarFoto.mutateAsync({
+            clinicaId,
+            atendimentoId,
+            file: p.file,
+            momento: p.momento,
+          })
+        }
+      }
+      pendentes.forEach((p) => URL.revokeObjectURL(p.preview))
       navigate(`/pacientes/${id}`, { replace: true })
     } catch {
       setErro('Não foi possível salvar. Tente de novo.')
+    } finally {
+      setSalvando(false)
     }
   }
 
@@ -106,7 +143,8 @@ export function AtendimentoFormPage() {
     navigate(`/pacientes/${id}`, { replace: true })
   }
 
-  const salvando = criar.isPending || atualizar.isPending
+  const pendAntes = pendentes.filter((p) => p.momento === 'antes')
+  const pendDepois = pendentes.filter((p) => p.momento === 'depois')
 
   return (
     <section>
@@ -139,13 +177,69 @@ export function AtendimentoFormPage() {
 
         <Campo rotulo="Evolução / o que foi feito *">
           <textarea
-            rows={8}
+            rows={6}
             value={evolucao}
             onChange={(e) => setEvolucao(e.target.value)}
             placeholder="Descreva o atendimento: queixa, procedimento realizado, orientações…"
             className={inputClass + ' py-2'}
           />
         </Campo>
+
+        {/* Fotos — escolhidas aqui e enviadas junto ao salvar. */}
+        <div>
+          <p className="mb-1 font-bold text-slate-700">Fotos</p>
+          <div className="mb-2 grid grid-cols-2 gap-1 rounded-lg bg-slate-100 p-1">
+            {(['antes', 'depois'] as const).map((m) => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => setMomento(m)}
+                className={
+                  'min-h-[40px] rounded-md font-bold capitalize ' +
+                  (momento === m ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-500')
+                }
+              >
+                {m}
+              </button>
+            ))}
+          </div>
+
+          <input
+            ref={inputFoto}
+            type="file"
+            accept="image/*"
+            multiple
+            onChange={aoEscolherFotos}
+            className="hidden"
+          />
+          <button
+            type="button"
+            onClick={() => inputFoto.current?.click()}
+            className="flex min-h-[48px] w-full items-center justify-center rounded-lg border-2 border-dashed border-brand-400 px-4 font-bold text-brand-700"
+          >
+            + Adicionar foto ({momento})
+          </button>
+
+          {/* Em espera (ainda não enviadas) */}
+          <PendentesGaleria titulo="Antes (a enviar)" fotos={pendAntes} aoRemover={removerPendente} />
+          <PendentesGaleria titulo="Depois (a enviar)" fotos={pendDepois} aoRemover={removerPendente} />
+
+          {/* Já salvas (modo edição) */}
+          <GaleriaFotos
+            titulo="Antes"
+            fotos={(fotos ?? []).filter((f) => f.momento === 'antes')}
+            aoExcluir={(f) => {
+              if (confirm('Excluir esta foto?')) excluirFoto.mutate(f)
+            }}
+          />
+          <GaleriaFotos
+            titulo="Depois"
+            fotos={(fotos ?? []).filter((f) => f.momento === 'depois')}
+            aoExcluir={(f) => {
+              if (confirm('Excluir esta foto?')) excluirFoto.mutate(f)
+            }}
+          />
+        </div>
 
         {erro && (
           <p role="alert" className="font-bold text-red-700">
@@ -167,68 +261,43 @@ export function AtendimentoFormPage() {
           </button>
         )}
       </form>
-
-      {/* Fotos antes/depois — só depois do atendimento existir (modo edição). */}
-      {editando ? (
-        <div className="mt-8">
-          <h2 className="mb-2 text-lg font-bold text-slate-800">Fotos</h2>
-
-          {/* Escolha antes/depois antes de tirar/enviar a foto. */}
-          <div className="mb-3 grid grid-cols-2 gap-1 rounded-lg bg-slate-100 p-1">
-            {(['antes', 'depois'] as const).map((m) => (
-              <button
-                key={m}
-                type="button"
-                onClick={() => setMomento(m)}
-                className={
-                  'min-h-[40px] rounded-md font-bold capitalize ' +
-                  (momento === m ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-500')
-                }
-              >
-                {m}
-              </button>
-            ))}
-          </div>
-
-          <input
-            ref={inputFoto}
-            type="file"
-            accept="image/*"
-            capture="environment"
-            multiple
-            onChange={aoEscolherFotos}
-            className="hidden"
-          />
-          <button
-            type="button"
-            onClick={() => inputFoto.current?.click()}
-            disabled={enviarFoto.isPending}
-            className="mb-4 flex min-h-[48px] w-full items-center justify-center rounded-lg border-2 border-dashed border-brand-400 px-4 font-bold text-brand-700"
-          >
-            {enviarFoto.isPending ? 'Enviando…' : `+ Adicionar foto (${momento})`}
-          </button>
-
-          <GaleriaFotos
-            titulo="Antes"
-            fotos={(fotos ?? []).filter((f) => f.momento === 'antes')}
-            aoExcluir={(f) => {
-              if (confirm('Excluir esta foto?')) excluirFoto.mutate(f)
-            }}
-          />
-          <GaleriaFotos
-            titulo="Depois"
-            fotos={(fotos ?? []).filter((f) => f.momento === 'depois')}
-            aoExcluir={(f) => {
-              if (confirm('Excluir esta foto?')) excluirFoto.mutate(f)
-            }}
-          />
-        </div>
-      ) : (
-        <p className="mt-6 text-sm text-slate-500">
-          Salve o atendimento para poder adicionar fotos.
-        </p>
-      )}
     </section>
+  )
+}
+
+function PendentesGaleria({
+  titulo,
+  fotos,
+  aoRemover,
+}: {
+  titulo: string
+  fotos: FotoPendente[]
+  aoRemover: (localId: string) => void
+}) {
+  if (fotos.length === 0) return null
+  return (
+    <div className="mt-3">
+      <h3 className="mb-2 text-sm font-bold text-amber-600">{titulo}</h3>
+      <div className="grid grid-cols-3 gap-2">
+        {fotos.map((f) => (
+          <div key={f.localId} className="relative">
+            <img
+              src={f.preview}
+              alt={titulo}
+              className="aspect-square w-full rounded-lg object-cover ring-2 ring-amber-300"
+            />
+            <button
+              type="button"
+              onClick={() => aoRemover(f.localId)}
+              aria-label="Remover foto"
+              className="absolute right-1 top-1 flex h-7 w-7 items-center justify-center rounded-full bg-black/60 text-sm font-bold text-white"
+            >
+              ×
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
   )
 }
 
@@ -243,7 +312,7 @@ function GaleriaFotos({
 }) {
   if (fotos.length === 0) return null
   return (
-    <div className="mb-4">
+    <div className="mt-3">
       <h3 className="mb-2 text-sm font-bold text-slate-500">{titulo}</h3>
       <div className="grid grid-cols-3 gap-2">
         {fotos.map((f) => (
