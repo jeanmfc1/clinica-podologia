@@ -11,6 +11,9 @@ import {
   type FotoComUrl,
 } from '../features/prontuario/api'
 import { usePaciente } from '../features/pacientes/api'
+import { useAgendamento } from '../features/agenda/api'
+import { FORMAS, useCriarPagamento } from '../features/financeiro/api'
+import type { FormaPagamento, StatusPagamento } from '../lib/types'
 import {
   combinarDataHora,
   dataLocalISO,
@@ -37,6 +40,8 @@ export function AtendimentoFormPage() {
 
   const { data: paciente } = usePaciente(id)
   const { data: atendimento } = useAtendimento(atId)
+  const { data: agendamento } = useAgendamento(agendamentoId ?? undefined)
+  const criarPagamento = useCriarPagamento()
   const criar = useCriarAtendimento()
   const atualizar = useAtualizarAtendimento()
   const excluir = useExcluirAtendimento()
@@ -54,6 +59,13 @@ export function AtendimentoFormPage() {
   const [momento, setMomento] = useState<'antes' | 'depois'>('antes')
   const [pendentes, setPendentes] = useState<FotoPendente[]>([])
   const [salvando, setSalvando] = useState(false)
+
+  // Pagamento registrado junto (só ao criar um atendimento novo).
+  const [registrarPag, setRegistrarPag] = useState(true)
+  const [valorPag, setValorPag] = useState('')
+  const [formaPag, setFormaPag] = useState<FormaPagamento>('dinheiro')
+  const [statusPag, setStatusPag] = useState<StatusPagamento>('pago')
+  const [vencimentoPag, setVencimentoPag] = useState('')
   const inputCamera = useRef<HTMLInputElement>(null)
   const inputGaleria = useRef<HTMLInputElement>(null)
 
@@ -89,6 +101,13 @@ export function AtendimentoFormPage() {
       setEvolucao(atendimento.evolucao ?? '')
     }
   }, [atendimento])
+
+  // Puxa o valor do procedimento da consulta pro pagamento.
+  useEffect(() => {
+    if (agendamento?.procedimento?.preco != null) {
+      setValorPag(String(agendamento.procedimento.preco).replace('.', ','))
+    }
+  }, [agendamento])
 
   async function aoEnviar(e: FormEvent) {
     e.preventDefault()
@@ -129,6 +148,26 @@ export function AtendimentoFormPage() {
           })
         }
       }
+
+      // 3) Registra o pagamento (só ao criar, se marcado e com valor).
+      if (!editando && registrarPag) {
+        const v = parseFloat(valorPag.replace(/\./g, '').replace(',', '.'))
+        if (!isNaN(v) && v > 0) {
+          await criarPagamento.mutateAsync({
+            tipo: 'entrada',
+            valor: v,
+            categoria: 'Consulta',
+            forma: formaPag,
+            status: statusPag,
+            vencimento: statusPag === 'pendente' ? vencimentoPag || null : null,
+            data: dataHora,
+            paciente_id: id,
+            agendamento_id: agendamentoId,
+            descricao: agendamento?.procedimento?.nome ?? null,
+          })
+        }
+      }
+
       pendentes.forEach((p) => URL.revokeObjectURL(p.preview))
       navigate(`/pacientes/${id}`, { replace: true })
     } catch {
@@ -261,6 +300,77 @@ export function AtendimentoFormPage() {
             }}
           />
         </div>
+
+        {/* Pagamento — registrado junto ao salvar o atendimento. */}
+        {!editando && (
+          <div className="rounded-lg border border-slate-200 bg-white p-3">
+            <label className="flex items-center gap-2 font-bold text-slate-800">
+              <input
+                type="checkbox"
+                checked={registrarPag}
+                onChange={(e) => setRegistrarPag(e.target.checked)}
+                className="h-5 w-5 accent-brand-600"
+              />
+              Registrar pagamento
+            </label>
+
+            {registrarPag && (
+              <div className="mt-3 flex flex-col gap-3">
+                <Campo rotulo="Valor (R$)">
+                  <input
+                    inputMode="decimal"
+                    value={valorPag}
+                    onChange={(e) => setValorPag(e.target.value)}
+                    placeholder="0,00"
+                    className={inputClass}
+                  />
+                </Campo>
+                <Campo rotulo="Forma">
+                  <select
+                    value={formaPag}
+                    onChange={(e) => setFormaPag(e.target.value as FormaPagamento)}
+                    className={inputClass}
+                  >
+                    {FORMAS.map((f) => (
+                      <option key={f.valor} value={f.valor}>
+                        {f.rotulo}
+                      </option>
+                    ))}
+                  </select>
+                </Campo>
+                <div className="grid grid-cols-2 gap-1 rounded-lg bg-slate-100 p-1">
+                  {(
+                    [
+                      ['pago', 'Recebido'],
+                      ['pendente', 'Fiado (a receber)'],
+                    ] as [StatusPagamento, string][]
+                  ).map(([s, r]) => (
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={() => setStatusPag(s)}
+                      className={
+                        'min-h-[40px] rounded-md font-bold ' +
+                        (statusPag === s ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-500')
+                      }
+                    >
+                      {r}
+                    </button>
+                  ))}
+                </div>
+                {statusPag === 'pendente' && (
+                  <Campo rotulo="Data pra receber">
+                    <DateInputBR
+                      value={vencimentoPag}
+                      onChange={setVencimentoPag}
+                      className={inputClass}
+                    />
+                  </Campo>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         {erro && (
           <p role="alert" className="font-bold text-red-700">
