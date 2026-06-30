@@ -123,14 +123,21 @@ export const ANAMNESE_SIM_NAO: { chave: string; rotulo: string }[] = [
   { chave: 'circulacao', rotulo: 'Problema de circulação' },
   { chave: 'cardiaco', rotulo: 'Problema cardíaco' },
   { chave: 'renal', rotulo: 'Problema nos rins' },
+  { chave: 'hepatite', rotulo: 'Hepatite' },
+  { chave: 'cancer', rotulo: 'Câncer' },
   { chave: 'gestante', rotulo: 'Gestante' },
   { chave: 'fumante', rotulo: 'Fumante' },
   { chave: 'marcapasso', rotulo: 'Usa marcapasso' },
+  { chave: 'ferida_cicatrizacao', rotulo: 'Já teve ferida que demorou a cicatrizar' },
+  { chave: 'formigamento', rotulo: 'Formigamento ou dormência nos pés' },
+  { chave: 'unha_encravada', rotulo: 'Unha encravada com frequência' },
 ]
 
 export const ANAMNESE_TEXTO: { chave: string; rotulo: string }[] = [
   { chave: 'alergias', rotulo: 'Alergias' },
   { chave: 'medicamentos', rotulo: 'Medicamentos em uso' },
   { chave: 'cirurgias', rotulo: 'Cirurgias / outras condições' },
+  { chave: 'calcado', rotulo: 'Tipo de calçado que usa no dia a dia' },
+  { chave: 'atividade_fisica', rotulo: 'Prática de atividade física' },
   { chave: 'observacoes', rotulo: 'Observações gerais' },
 ]
