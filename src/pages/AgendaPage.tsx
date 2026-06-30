@@ -16,7 +16,6 @@ import {
   somarDias,
 } from '../lib/format'
 import { Aviso, PageHeader } from '../components/ui'
-import { APP_VERSION, APP_VERSION_DATA } from '../lib/version'
 
 type Modo = 'mes' | 'semana' | 'dia'
 
@@ -217,10 +216,6 @@ export function AgendaPage() {
         <DiaLista doDia={porDia.get(refDate) ?? []} google={google?.eventos ?? []} />
       )}
 
-      {/* Versão do app — confere se está rodando a mais nova. */}
-      <p className="mt-8 text-center text-xs text-slate-400">
-        Pés de Anjo · versão {APP_VERSION} ({APP_VERSION_DATA})
-      </p>
     </section>
   )
 }

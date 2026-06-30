@@ -7,6 +7,7 @@ import {
 import { usePagamentosIntervalo, usePendentes } from '../features/financeiro/api'
 import { AgendamentoItem } from '../features/agenda/AgendamentoItem'
 import { clinica } from '../config'
+import { APP_VERSION, APP_VERSION_DATA } from '../lib/version'
 import { dataPorExtenso, formatReal, hojeISO } from '../lib/format'
 
 export function InicioPage() {
@@ -76,6 +77,11 @@ export function InicioPage() {
           </ul>
         </>
       )}
+
+      {/* Versão do app — confere se está rodando a mais nova. */}
+      <p className="mt-8 text-center text-xs text-slate-400">
+        Pés de Anjo · versão {APP_VERSION} ({APP_VERSION_DATA})
+      </p>
     </section>
   )
 }
