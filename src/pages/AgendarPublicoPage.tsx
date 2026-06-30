@@ -15,6 +15,7 @@ import {
 } from '../lib/agendarPublico'
 import { BotaoPrimario, Campo, inputClass } from '../components/ui'
 import { DateInputBR } from '../components/DateInputBR'
+import { TelefoneInput } from '../components/TelefoneInput'
 
 export function AgendarPublicoPage() {
   const [procedimentos, setProcedimentos] = useState<ProcedimentoPublico[]>([])
@@ -200,13 +201,7 @@ export function AgendarPublicoPage() {
               <input value={nome} onChange={(e) => setNome(e.target.value)} className={inputClass} />
             </Campo>
             <Campo rotulo="Telefone (WhatsApp) *">
-              <input
-                type="tel"
-                value={telefone}
-                onChange={(e) => setTelefone(e.target.value)}
-                placeholder="(62) 99999-9999"
-                className={inputClass}
-              />
+              <TelefoneInput value={telefone} onChange={setTelefone} className={inputClass} />
             </Campo>
             <Campo rotulo="Data de nascimento *">
               <DateInputBR value={nascimento} onChange={setNascimento} className={inputClass} />
