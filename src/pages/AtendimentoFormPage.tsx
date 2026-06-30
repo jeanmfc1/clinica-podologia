@@ -11,7 +11,7 @@ import {
   type FotoComUrl,
 } from '../features/prontuario/api'
 import { usePaciente } from '../features/pacientes/api'
-import { useAgendamento, useCriarAgendamento } from '../features/agenda/api'
+import { useAgendamento, useCriarAgendamento, useMudarStatus } from '../features/agenda/api'
 import { FORMAS, useCriarPagamento } from '../features/financeiro/api'
 import type { FormaPagamento, StatusPagamento } from '../lib/types'
 import {
@@ -41,9 +41,12 @@ export function AtendimentoFormPage() {
 
   const { data: paciente } = usePaciente(id)
   const { data: atendimento } = useAtendimento(atId)
-  const { data: agendamento } = useAgendamento(agendamentoId ?? undefined)
+  // Consulta ligada: pelo link (criar) ou pelo próprio atendimento (editar).
+  const agId = agendamentoId ?? atendimento?.agendamento_id ?? undefined
+  const { data: agendamento } = useAgendamento(agId)
   const criarPagamento = useCriarPagamento()
   const criarAgendamento = useCriarAgendamento()
+  const mudarStatus = useMudarStatus()
   const criar = useCriarAtendimento()
   const atualizar = useAtualizarAtendimento()
   const excluir = useExcluirAtendimento()
@@ -144,6 +147,11 @@ export function AtendimentoFormPage() {
         clinicaId = novo.clinica_id
       }
 
+      // Marca a consulta ligada como "atendido" (atualiza agenda e Google).
+      if (!editando && agendamentoId) {
+        await mudarStatus.mutateAsync({ id: agendamentoId, status: 'atendido' })
+      }
+
       // 2) Envia as fotos que estavam em espera.
       if (atendimentoId && clinicaId) {
         for (const p of pendentes) {
@@ -212,8 +220,14 @@ export function AtendimentoFormPage() {
       <PageHeader titulo={editando ? 'Editar atendimento' : 'Novo atendimento'} voltar />
 
       {paciente && (
-        <p className="mb-4 text-slate-600">
+        <p className="mb-1 text-slate-600">
           Paciente: <span className="font-bold text-slate-800">{paciente.nome}</span>
+        </p>
+      )}
+      {agendamento?.procedimento && (
+        <p className="mb-4 text-slate-600">
+          Procedimento:{' '}
+          <span className="font-bold text-slate-800">{agendamento.procedimento.nome}</span>
         </p>
       )}
 
