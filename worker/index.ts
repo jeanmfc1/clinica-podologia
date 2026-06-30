@@ -298,10 +298,32 @@ export default {
         env,
         `bloqueios_agenda?clinica_id=eq.${clinicaId}&inicio=lt.${fim}&fim=gt.${ini}&select=inicio,fim`,
       )
-      const ocupados = [
-        ...((await ag.json()) as unknown[]),
-        ...((await bl.json()) as unknown[]),
+      const ocupados: { inicio: string; fim: string }[] = [
+        ...((await ag.json()) as { inicio: string; fim: string }[]),
+        ...((await bl.json()) as { inicio: string; fim: string }[]),
       ]
+
+      // + agenda do Google da Simeire (só horários ocupados, SEM detalhes).
+      const reg = await lerIntegracao(env, clinicaId)
+      if (reg?.refresh_token) {
+        const token = await tokenValido(env, reg)
+        if (token) {
+          const calId = reg.calendar_id || 'primary'
+          const fb = await fetch('https://www.googleapis.com/calendar/v3/freeBusy', {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+            body: JSON.stringify({ timeMin: ini, timeMax: fim, items: [{ id: calId }] }),
+          })
+          if (fb.ok) {
+            const data = (await fb.json()) as {
+              calendars?: Record<string, { busy?: { start: string; end: string }[] }>
+            }
+            const busy = data.calendars?.[calId]?.busy ?? []
+            for (const b of busy) ocupados.push({ inicio: b.start, fim: b.end })
+          }
+        }
+      }
+
       return json({ ocupados })
     }
 
