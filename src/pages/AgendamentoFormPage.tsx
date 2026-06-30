@@ -32,7 +32,7 @@ export function AgendamentoFormPage() {
   const atualizar = useAtualizarAgendamento()
   const excluir = useExcluirAgendamento()
 
-  const [pacienteId, setPacienteId] = useState('')
+  const [pacienteId, setPacienteId] = useState(params.get('paciente') || '')
   const [procedimentoId, setProcedimentoId] = useState('')
   const [data, setData] = useState(params.get('dia') || hojeISO())
   const [hora, setHora] = useState('09:00')

@@ -1,6 +1,8 @@
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { usePaciente, useExcluirPaciente } from '../features/pacientes/api'
 import { useAnamnese, useAtendimentosDoPaciente } from '../features/prontuario/api'
+import { useAgendamentosDoPaciente } from '../features/agenda/api'
+import { STATUS_INFO } from '../features/agenda/status'
 import {
   calcularIdade,
   formatData,
@@ -8,7 +10,7 @@ import {
   horaLocal,
   linkWhatsapp,
 } from '../lib/format'
-import type { Atendimento } from '../lib/types'
+import type { AgendamentoComNomes, Atendimento } from '../lib/types'
 import { Aviso, PageHeader } from '../components/ui'
 
 export function PacienteDetalhePage() {
@@ -17,6 +19,7 @@ export function PacienteDetalhePage() {
   const { data: p, isLoading, isError } = usePaciente(id)
   const { data: anamnese } = useAnamnese(id)
   const { data: atendimentos } = useAtendimentosDoPaciente(id)
+  const { data: consultas } = useAgendamentosDoPaciente(id)
   const excluir = useExcluirPaciente()
 
   if (isLoading) {
@@ -106,6 +109,26 @@ export function PacienteDetalhePage() {
         <span className="font-bold text-brand-700">{anamnese ? 'Ver' : 'Preencher'}</span>
       </Link>
 
+      {/* Consultas (agendamentos) */}
+      <div className="mb-2 flex items-center justify-between">
+        <h3 className="font-bold text-slate-800">Consultas</h3>
+        <Link to={`/agenda/novo?paciente=${p.id}`} className="text-sm font-bold text-brand-700">
+          + Marcar
+        </Link>
+      </div>
+
+      {!consultas || consultas.length === 0 ? (
+        <Aviso>Nenhuma consulta marcada.</Aviso>
+      ) : (
+        <ul className="mb-4 flex flex-col gap-2">
+          {consultas.map((c) => (
+            <li key={c.id}>
+              <ConsultaLinha c={c} />
+            </li>
+          ))}
+        </ul>
+      )}
+
       {/* Atendimentos */}
       <div className="mb-2 flex items-center justify-between">
         <h3 className="font-bold text-slate-800">Atendimentos</h3>
@@ -147,6 +170,29 @@ function Linha({ rotulo, valor }: { rotulo: string; valor: string | null | undef
       <p className="text-sm text-slate-500">{rotulo}</p>
       <p className="font-bold text-slate-800">{valor}</p>
     </div>
+  )
+}
+
+function ConsultaLinha({ c }: { c: AgendamentoComNomes }) {
+  const info = STATUS_INFO[c.status]
+  return (
+    <Link
+      to={`/agenda/${c.id}`}
+      className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-3"
+    >
+      <span className="min-w-0">
+        <span className="block font-bold text-slate-900">
+          {formatData(c.inicio)} · {horaLocal(c.inicio)}
+        </span>
+        <span className="block truncate text-sm text-slate-500">
+          {c.procedimento?.nome ?? '—'}
+          {c.origem === 'online' ? ' · Online' : ''}
+        </span>
+      </span>
+      <span className={'shrink-0 rounded-full px-2 py-1 text-xs font-bold ' + info.classe}>
+        {info.rotulo}
+      </span>
+    </Link>
   )
 }
 

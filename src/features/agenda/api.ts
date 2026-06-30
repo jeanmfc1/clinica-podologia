@@ -77,6 +77,23 @@ export function useProximosAgendamentos(limite = 10) {
   })
 }
 
+// Consultas de um paciente (mais recentes primeiro), pra tela do paciente.
+export function useAgendamentosDoPaciente(pacienteId: string | undefined) {
+  return useQuery({
+    queryKey: [CHAVE, 'paciente', pacienteId],
+    enabled: !!pacienteId,
+    queryFn: async (): Promise<AgendamentoComNomes[]> => {
+      const { data, error } = await supabase
+        .from('agendamentos')
+        .select(SELECT)
+        .eq('paciente_id', pacienteId!)
+        .order('inicio', { ascending: false })
+      if (error) throw error
+      return (data ?? []) as unknown as AgendamentoComNomes[]
+    },
+  })
+}
+
 export function useAgendamento(id: string | undefined) {
   return useQuery({
     queryKey: [CHAVE, id],
