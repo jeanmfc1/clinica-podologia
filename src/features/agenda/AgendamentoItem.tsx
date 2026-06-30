@@ -23,6 +23,11 @@ export function AgendamentoItem({ a }: { a: AgendamentoComNomes }) {
         <span className="block truncate text-sm text-slate-500">
           {a.procedimento?.nome ?? '—'}
         </span>
+        {a.origem === 'online' && (
+          <span className="mt-1 inline-block rounded-full bg-blue-100 px-2 py-0.5 text-xs font-bold text-blue-700">
+            Online · a confirmar
+          </span>
+        )}
       </span>
       <span className={'shrink-0 rounded-full px-2 py-1 text-xs font-bold ' + info.classe}>
         {info.rotulo}

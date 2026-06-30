@@ -134,6 +134,7 @@ export const ANAMNESE_SIM_NAO: { chave: string; rotulo: string }[] = [
 ]
 
 export const ANAMNESE_TEXTO: { chave: string; rotulo: string }[] = [
+  { chave: 'profissao', rotulo: 'Profissão / ocupação' },
   { chave: 'alergias', rotulo: 'Alergias' },
   { chave: 'medicamentos', rotulo: 'Medicamentos em uso' },
   { chave: 'cirurgias', rotulo: 'Cirurgias / outras condições' },

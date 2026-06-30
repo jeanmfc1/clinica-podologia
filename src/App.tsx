@@ -16,6 +16,7 @@ import { GoogleAgendaPage } from './pages/GoogleAgendaPage'
 import { AtenderPage } from './pages/AtenderPage'
 import { AtendimentoFormPage } from './pages/AtendimentoFormPage'
 import { AnamneseFormPage } from './pages/AnamneseFormPage'
+import { AgendarPublicoPage } from './pages/AgendarPublicoPage'
 
 export default function App() {
   return (
@@ -23,6 +24,8 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          {/* Agendamento online — página pública, sem login. */}
+          <Route path="/agendar" element={<AgendarPublicoPage />} />
 
           {/* Rotas internas exigem login. */}
           <Route element={<ProtectedRoute />}>

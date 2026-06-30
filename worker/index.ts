@@ -65,6 +65,22 @@ async function clinicaDoUsuario(request: Request, env: Env): Promise<string | nu
   return rows[0]?.clinica_id ?? null
 }
 
+// A clínica (sistema de uma clínica só) — usada nas rotas públicas.
+async function clinicaUnica(env: Env): Promise<string | null> {
+  const r = await sb(env, 'clinicas?select=id&order=created_at&limit=1')
+  const rows = (await r.json()) as { id: string }[]
+  return rows[0]?.id ?? null
+}
+
+// Um profissional da clínica (pra preencher o dono da consulta no agendamento online).
+async function profissionalDaClinica(env: Env, clinicaId: string): Promise<string | null> {
+  const r = await sb(env, `usuarios?clinica_id=eq.${clinicaId}&select=id&limit=1`)
+  const rows = (await r.json()) as { id: string }[]
+  return rows[0]?.id ?? null
+}
+
+const soDigitos = (s: string) => (s || '').replace(/\D/g, '')
+
 // ---------- Estado assinado (state do OAuth) ----------
 async function hmac(env: Env, msg: string): Promise<string> {
   const key = await crypto.subtle.importKey(
@@ -254,6 +270,133 @@ export default {
 
     // Saúde do backend.
     if (p === '/api/ping') return json({ ok: true, hora: new Date().toISOString() })
+
+    // =================================================================
+    // AGENDAMENTO ONLINE (rotas PÚBLICAS — sem login).
+    // =================================================================
+
+    // Procedimentos ativos (o paciente escolhe o serviço).
+    if (p === '/api/agendar/procedimentos') {
+      const clinicaId = await clinicaUnica(env)
+      if (!clinicaId) return json({ procedimentos: [] })
+      const r = await sb(
+        env,
+        `procedimentos?clinica_id=eq.${clinicaId}&ativo=eq.true&select=id,nome,duracao_min,preco&order=nome`,
+      )
+      return json({ procedimentos: await r.json() })
+    }
+
+    // Horários ocupados num intervalo (consultas + bloqueios), pra esconder slots cheios.
+    if (p === '/api/agendar/ocupados') {
+      const clinicaId = await clinicaUnica(env)
+      const ini = url.searchParams.get('ini')
+      const fim = url.searchParams.get('fim')
+      if (!clinicaId || !ini || !fim) return json({ ocupados: [] })
+      const ag = await sb(
+        env,
+        `agendamentos?clinica_id=eq.${clinicaId}&inicio=gte.${ini}&inicio=lt.${fim}&status=neq.cancelado&select=inicio,fim`,
+      )
+      const bl = await sb(
+        env,
+        `bloqueios_agenda?clinica_id=eq.${clinicaId}&inicio=lt.${fim}&fim=gt.${ini}&select=inicio,fim`,
+      )
+      const ocupados = [
+        ...((await ag.json()) as unknown[]),
+        ...((await bl.json()) as unknown[]),
+      ]
+      return json({ ocupados })
+    }
+
+    // Cria o pedido de agendamento: paciente + consulta (a confirmar) + anamnese.
+    if (p === '/api/agendar' && request.method === 'POST') {
+      const clinicaId = await clinicaUnica(env)
+      if (!clinicaId) return json({ erro: 'clínica não encontrada' }, 500)
+      const profId = await profissionalDaClinica(env, clinicaId)
+
+      const body = (await request.json().catch(() => ({}))) as {
+        procedimento_id?: string
+        inicio?: string
+        fim?: string
+        paciente?: {
+          nome?: string
+          telefone?: string
+          nascimento?: string | null
+          documento?: string | null
+          endereco?: string | null
+        }
+        anamnese?: Record<string, unknown>
+      }
+
+      const nome = (body.paciente?.nome || '').trim()
+      const telefone = soDigitos(body.paciente?.telefone || '')
+      if (!nome || !telefone) return json({ erro: 'Informe nome e telefone.' }, 400)
+      if (!body.inicio || !body.fim) return json({ erro: 'Escolha um horário.' }, 400)
+
+      // Acha o paciente pelo telefone; se não existir, cria.
+      const busca = await sb(
+        env,
+        `pacientes?clinica_id=eq.${clinicaId}&telefone=eq.${telefone}&select=id&limit=1`,
+      )
+      let pacienteId = ((await busca.json()) as { id: string }[])[0]?.id ?? null
+
+      if (!pacienteId) {
+        const ins = await sb(env, 'pacientes?select=id', {
+          method: 'POST',
+          headers: { Prefer: 'return=representation' },
+          body: JSON.stringify({
+            clinica_id: clinicaId,
+            nome,
+            telefone,
+            nascimento: body.paciente?.nascimento || null,
+            documento: body.paciente?.documento || null,
+            endereco: body.paciente?.endereco || null,
+          }),
+        })
+        if (!ins.ok) {
+          console.log('agendar: erro criar paciente', ins.status, await ins.text())
+          return json({ erro: 'Não foi possível salvar o cadastro.' }, 500)
+        }
+        pacienteId = ((await ins.json()) as { id: string }[])[0]?.id ?? null
+      }
+      if (!pacienteId) return json({ erro: 'Falha ao identificar o paciente.' }, 500)
+
+      // Cria a consulta como "a confirmar" (status agendado), marcada como online.
+      const ag = await sb(env, 'agendamentos', {
+        method: 'POST',
+        headers: { Prefer: 'return=minimal' },
+        body: JSON.stringify({
+          clinica_id: clinicaId,
+          paciente_id: pacienteId,
+          procedimento_id: body.procedimento_id || null,
+          profissional_id: profId,
+          inicio: body.inicio,
+          fim: body.fim,
+          status: 'agendado',
+          origem: 'online',
+          observacao: 'Agendamento feito pelo paciente (online).',
+        }),
+      })
+      if (!ag.ok) {
+        console.log('agendar: erro criar consulta', ag.status, await ag.text())
+        return json({ erro: 'Não foi possível registrar o pedido.' }, 500)
+      }
+
+      // Salva a anamnese (uma por paciente).
+      if (body.anamnese) {
+        await sb(env, 'anamneses?on_conflict=paciente_id', {
+          method: 'POST',
+          headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
+          body: JSON.stringify({
+            clinica_id: clinicaId,
+            paciente_id: pacienteId,
+            respostas_json: body.anamnese,
+            atualizado_em: new Date().toISOString(),
+          }),
+        })
+      }
+
+      return json({ ok: true })
+    }
 
     // Inicia a conexão: devolve a URL de consentimento do Google.
     if (p === '/api/google/oauth/start') {

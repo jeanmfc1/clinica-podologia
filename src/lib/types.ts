@@ -62,6 +62,7 @@ export type Agendamento = {
   fim: string
   status: StatusAgendamento
   observacao: string | null
+  origem: 'manual' | 'online'
   created_at: string
   updated_at: string
 }
