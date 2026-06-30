@@ -81,6 +81,9 @@ export function AgendarPublicoPage() {
     if (!data || !slot) return setErro('Escolha o dia e o horário.')
     if (!nome.trim()) return setErro('Informe seu nome.')
     if (!telefone.trim()) return setErro('Informe seu telefone (WhatsApp).')
+    if (!nascimento) return setErro('Informe sua data de nascimento.')
+    if (!documento.trim()) return setErro('Informe seu CPF / documento.')
+    if (!endereco.trim()) return setErro('Informe seu endereço.')
     if (!confirmo) return setErro('Confirme que as informações de saúde estão corretas.')
 
     const inicio = combinarDataHora(data, slot)
@@ -148,6 +151,12 @@ export function AgendarPublicoPage() {
               </option>
             ))}
           </select>
+          {proc && (
+            <div className="mt-2 flex items-center justify-between rounded-lg bg-brand-50 px-4 py-3">
+              <span className="text-sm text-slate-600">{proc.duracao_min} min</span>
+              <span className="text-lg font-bold text-brand-800">{formatReal(proc.preco)}</span>
+            </div>
+          )}
         </Secao>
 
         {/* 2. Dia e horário */}
@@ -199,17 +208,17 @@ export function AgendarPublicoPage() {
                 className={inputClass}
               />
             </Campo>
-            <Campo rotulo="Data de nascimento">
+            <Campo rotulo="Data de nascimento *">
               <DateInputBR value={nascimento} onChange={setNascimento} className={inputClass} />
             </Campo>
-            <Campo rotulo="CPF / documento">
+            <Campo rotulo="CPF / documento *">
               <input
                 value={documento}
                 onChange={(e) => setDocumento(e.target.value)}
                 className={inputClass}
               />
             </Campo>
-            <Campo rotulo="Endereço">
+            <Campo rotulo="Endereço *">
               <input
                 value={endereco}
                 onChange={(e) => setEndereco(e.target.value)}
