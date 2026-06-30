@@ -1,6 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../../lib/supabase'
-import type { Anamnese, Atendimento, AtendimentoInput } from '../../lib/types'
+import type {
+  Anamnese,
+  Atendimento,
+  AtendimentoInput,
+  FotoClinica,
+} from '../../lib/types'
+
+const BUCKET = 'clinicos'
 
 const CHAVE = 'atendimentos'
 
@@ -113,6 +120,70 @@ export function useSalvarAnamnese() {
       if (error) throw error
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['anamnese'] }),
+  })
+}
+
+// ----- Fotos clínicas (antes/depois) de um atendimento -----
+export type FotoComUrl = FotoClinica & { url: string | null }
+
+export function useFotosDoAtendimento(atendimentoId: string | undefined) {
+  return useQuery({
+    queryKey: ['fotos', atendimentoId],
+    enabled: !!atendimentoId,
+    queryFn: async (): Promise<FotoComUrl[]> => {
+      const { data: rows, error } = await supabase
+        .from('fotos_clinicas')
+        .select('*')
+        .eq('atendimento_id', atendimentoId!)
+        .order('created_at')
+      if (error) throw error
+      const fotos = (rows ?? []) as FotoClinica[]
+      if (fotos.length === 0) return []
+      // Bucket é privado: gera links assinados temporários pra exibir.
+      const { data: assinadas } = await supabase.storage
+        .from(BUCKET)
+        .createSignedUrls(fotos.map((f) => f.storage_path), 3600)
+      return fotos.map((f, i) => ({ ...f, url: assinadas?.[i]?.signedUrl ?? null }))
+    },
+  })
+}
+
+export function useEnviarFoto() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (args: {
+      clinicaId: string
+      atendimentoId: string
+      file: File
+      momento: 'antes' | 'depois'
+    }) => {
+      const ext = (args.file.name.split('.').pop() || 'jpg').toLowerCase()
+      const nome = `${crypto.randomUUID()}.${ext}`
+      // Caminho exigido pela segurança: <clinica_id>/<atendimento_id>/<arquivo>
+      const path = `${args.clinicaId}/${args.atendimentoId}/${nome}`
+      const up = await supabase.storage.from(BUCKET).upload(path, args.file, { upsert: false })
+      if (up.error) throw up.error
+      const { error } = await supabase.from('fotos_clinicas').insert({
+        atendimento_id: args.atendimentoId,
+        storage_path: path,
+        momento: args.momento,
+        consentimento_em: new Date().toISOString(),
+      })
+      if (error) throw error
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['fotos'] }),
+  })
+}
+
+export function useExcluirFoto() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (foto: FotoClinica) => {
+      await supabase.storage.from(BUCKET).remove([foto.storage_path])
+      const { error } = await supabase.from('fotos_clinicas').delete().eq('id', foto.id)
+      if (error) throw error
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['fotos'] }),
   })
 }
 

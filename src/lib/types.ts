@@ -105,6 +105,17 @@ export type AtendimentoInput = {
   evolucao?: string | null
 }
 
+// Foto clínica (antes/depois) ligada a um atendimento.
+export type FotoClinica = {
+  id: string
+  clinica_id: string
+  atendimento_id: string
+  storage_path: string
+  momento: 'antes' | 'depois'
+  consentimento_em: string | null
+  created_at: string
+}
+
 // Anamnese: ficha de saúde do paciente (uma por paciente). Respostas flexíveis.
 export type Anamnese = {
   id: string
