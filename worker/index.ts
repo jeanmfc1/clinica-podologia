@@ -65,18 +65,16 @@ async function clinicaDoUsuario(request: Request, env: Env): Promise<string | nu
   return rows[0]?.clinica_id ?? null
 }
 
-// A clínica (sistema de uma clínica só) — usada nas rotas públicas.
-async function clinicaUnica(env: Env): Promise<string | null> {
-  const r = await sb(env, 'clinicas?select=id&order=created_at&limit=1')
-  const rows = (await r.json()) as { id: string }[]
-  return rows[0]?.id ?? null
-}
-
-// Um profissional da clínica (pra preencher o dono da consulta no agendamento online).
-async function profissionalDaClinica(env: Env, clinicaId: string): Promise<string | null> {
-  const r = await sb(env, `usuarios?clinica_id=eq.${clinicaId}&select=id&limit=1`)
-  const rows = (await r.json()) as { id: string }[]
-  return rows[0]?.id ?? null
+// A clínica ativa (a que tem profissional cadastrado) + um profissional dela.
+// Sistema de uma clínica só; deriva da tabela de usuários pra pegar a clínica
+// real (e não uma clínica vazia que exista no banco).
+async function donoDaClinica(
+  env: Env,
+): Promise<{ clinicaId: string; profId: string } | null> {
+  const r = await sb(env, 'usuarios?select=id,clinica_id&limit=1')
+  const rows = (await r.json()) as { id: string; clinica_id: string }[]
+  const u = rows[0]
+  return u ? { clinicaId: u.clinica_id, profId: u.id } : null
 }
 
 const soDigitos = (s: string) => (s || '').replace(/\D/g, '')
@@ -277,7 +275,7 @@ export default {
 
     // Procedimentos ativos (o paciente escolhe o serviço).
     if (p === '/api/agendar/procedimentos') {
-      const clinicaId = await clinicaUnica(env)
+      const clinicaId = (await donoDaClinica(env))?.clinicaId
       if (!clinicaId) return json({ procedimentos: [] })
       const r = await sb(
         env,
@@ -288,7 +286,7 @@ export default {
 
     // Horários ocupados num intervalo (consultas + bloqueios), pra esconder slots cheios.
     if (p === '/api/agendar/ocupados') {
-      const clinicaId = await clinicaUnica(env)
+      const clinicaId = (await donoDaClinica(env))?.clinicaId
       const ini = url.searchParams.get('ini')
       const fim = url.searchParams.get('fim')
       if (!clinicaId || !ini || !fim) return json({ ocupados: [] })
@@ -309,9 +307,9 @@ export default {
 
     // Cria o pedido de agendamento: paciente + consulta (a confirmar) + anamnese.
     if (p === '/api/agendar' && request.method === 'POST') {
-      const clinicaId = await clinicaUnica(env)
-      if (!clinicaId) return json({ erro: 'clínica não encontrada' }, 500)
-      const profId = await profissionalDaClinica(env, clinicaId)
+      const dono = await donoDaClinica(env)
+      if (!dono) return json({ erro: 'clínica não encontrada' }, 500)
+      const { clinicaId, profId } = dono
 
       const body = (await request.json().catch(() => ({}))) as {
         procedimento_id?: string
