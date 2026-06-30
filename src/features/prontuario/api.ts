@@ -5,6 +5,8 @@ import type {
   Atendimento,
   AtendimentoInput,
   FotoClinica,
+  MapaInput,
+  MapaPodologico,
 } from '../../lib/types'
 
 const BUCKET = 'clinicos'
@@ -184,6 +186,72 @@ export function useExcluirFoto() {
       if (error) throw error
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['fotos'] }),
+  })
+}
+
+// ----- Mapa podológico (achados por pé) -----
+export const REGIOES = [
+  'Hálux',
+  '2º dedo',
+  '3º dedo',
+  '4º dedo',
+  '5º dedo',
+  'Unha',
+  'Sulco lateral',
+  'Planta',
+  'Calcanhar',
+  'Lateral',
+  'Entre os dedos',
+]
+
+export const ACHADOS = [
+  'Calo',
+  'Cravo',
+  'Unha encravada',
+  'Micose (pele)',
+  'Micose (unha)',
+  'Fissura/rachadura',
+  'Ferida',
+  'Bolha',
+  'Verruga',
+  'Ressecamento',
+]
+
+export function useMapaDoAtendimento(atendimentoId: string | undefined) {
+  return useQuery({
+    queryKey: ['mapa', atendimentoId],
+    enabled: !!atendimentoId,
+    queryFn: async (): Promise<MapaPodologico[]> => {
+      const { data, error } = await supabase
+        .from('mapa_podologico')
+        .select('*')
+        .eq('atendimento_id', atendimentoId!)
+        .order('created_at')
+      if (error) throw error
+      return (data ?? []) as MapaPodologico[]
+    },
+  })
+}
+
+export function useCriarMapa() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (input: MapaInput) => {
+      const { error } = await supabase.from('mapa_podologico').insert(input)
+      if (error) throw error
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['mapa'] }),
+  })
+}
+
+export function useExcluirMapa() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('mapa_podologico').delete().eq('id', id)
+      if (error) throw error
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['mapa'] }),
   })
 }
 

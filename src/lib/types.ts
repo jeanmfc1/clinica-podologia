@@ -154,6 +154,26 @@ export type FotoClinica = {
   created_at: string
 }
 
+// Mapa podológico: achado por pé/região, ligado a um atendimento.
+export type MapaPodologico = {
+  id: string
+  clinica_id: string
+  atendimento_id: string
+  pe: 'D' | 'E'
+  regiao: string
+  achado: string
+  observacao: string | null
+  created_at: string
+}
+
+export type MapaInput = {
+  atendimento_id: string
+  pe: 'D' | 'E'
+  regiao: string
+  achado: string
+  observacao?: string | null
+}
+
 // Anamnese: ficha de saúde do paciente (uma por paciente). Respostas flexíveis.
 export type Anamnese = {
   id: string

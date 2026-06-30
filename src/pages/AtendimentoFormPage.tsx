@@ -8,12 +8,17 @@ import {
   useEnviarFoto,
   useExcluirFoto,
   useFotosDoAtendimento,
+  useMapaDoAtendimento,
+  useCriarMapa,
+  useExcluirMapa,
+  REGIOES,
+  ACHADOS,
   type FotoComUrl,
 } from '../features/prontuario/api'
 import { usePaciente } from '../features/pacientes/api'
 import { useAgendamento, useCriarAgendamento, useMudarStatus } from '../features/agenda/api'
 import { FORMAS, useCriarPagamento } from '../features/financeiro/api'
-import type { FormaPagamento, StatusPagamento } from '../lib/types'
+import type { FormaPagamento, MapaPodologico, StatusPagamento } from '../lib/types'
 import {
   combinarDataHora,
   dataLocalISO,
@@ -30,6 +35,15 @@ type FotoPendente = {
   file: File
   momento: 'antes' | 'depois'
   preview: string
+}
+
+// Achado do mapa em espera (até salvar).
+type MapaPendente = {
+  localId: string
+  pe: 'D' | 'E'
+  regiao: string
+  achado: string
+  observacao: string
 }
 
 export function AtendimentoFormPage() {
@@ -53,6 +67,9 @@ export function AtendimentoFormPage() {
   const { data: fotos } = useFotosDoAtendimento(atId)
   const enviarFoto = useEnviarFoto()
   const excluirFoto = useExcluirFoto()
+  const { data: mapa } = useMapaDoAtendimento(atId)
+  const criarMapa = useCriarMapa()
+  const excluirMapa = useExcluirMapa()
 
   const agora = new Date()
   const [data, setData] = useState(hojeISO())
@@ -76,6 +93,34 @@ export function AtendimentoFormPage() {
   const [agendarRetorno, setAgendarRetorno] = useState(false)
   const [dataRetorno, setDataRetorno] = useState(somarDias(hojeISO(), 30))
   const [horaRetorno, setHoraRetorno] = useState('09:00')
+
+  // Mapa do pé (achados em espera + campos do novo achado).
+  const [mapaPendentes, setMapaPendentes] = useState<MapaPendente[]>([])
+  const [peNovo, setPeNovo] = useState<'D' | 'E'>('D')
+  const [regiaoNova, setRegiaoNova] = useState('')
+  const [achadoNovo, setAchadoNovo] = useState('')
+  const [obsMapa, setObsMapa] = useState('')
+
+  function adicionarAchado() {
+    if (!regiaoNova.trim() || !achadoNovo.trim()) return
+    setMapaPendentes((l) => [
+      ...l,
+      {
+        localId: crypto.randomUUID(),
+        pe: peNovo,
+        regiao: regiaoNova.trim(),
+        achado: achadoNovo.trim(),
+        observacao: obsMapa.trim(),
+      },
+    ])
+    setRegiaoNova('')
+    setAchadoNovo('')
+    setObsMapa('')
+  }
+
+  function removerMapaPendente(localId: string) {
+    setMapaPendentes((l) => l.filter((m) => m.localId !== localId))
+  }
   const inputCamera = useRef<HTMLInputElement>(null)
   const inputGaleria = useRef<HTMLInputElement>(null)
 
@@ -179,6 +224,19 @@ export function AtendimentoFormPage() {
             paciente_id: id,
             agendamento_id: agendamentoId,
             descricao: agendamento?.procedimento?.nome ?? null,
+          })
+        }
+      }
+
+      // Salva os achados do mapa do pé.
+      if (atendimentoId) {
+        for (const m of mapaPendentes) {
+          await criarMapa.mutateAsync({
+            atendimento_id: atendimentoId,
+            pe: m.pe,
+            regiao: m.regiao,
+            achado: m.achado,
+            observacao: m.observacao || null,
           })
         }
       }
@@ -334,6 +392,80 @@ export function AtendimentoFormPage() {
               if (confirm('Excluir esta foto?')) excluirFoto.mutate(f)
             }}
           />
+        </div>
+
+        {/* Mapa do pé — achados por região. */}
+        <div>
+          <p className="mb-1 font-bold text-slate-700 dark:text-slate-200">Mapa do pé</p>
+          <div className="flex flex-col gap-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3">
+            <div className="grid grid-cols-2 gap-1 rounded-lg bg-slate-100 dark:bg-slate-700 p-1">
+              {(['D', 'E'] as const).map((p) => (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => setPeNovo(p)}
+                  className={
+                    'min-h-[40px] rounded-md font-bold ' +
+                    (peNovo === p
+                      ? 'bg-white dark:bg-slate-800 text-brand-700 shadow-sm'
+                      : 'text-slate-500 dark:text-slate-400')
+                  }
+                >
+                  Pé {p === 'D' ? 'Direito' : 'Esquerdo'}
+                </button>
+              ))}
+            </div>
+            <input
+              list="regioes-lista"
+              value={regiaoNova}
+              onChange={(e) => setRegiaoNova(e.target.value)}
+              placeholder="Região (ex.: Hálux, Calcanhar)"
+              className={inputClass}
+            />
+            <datalist id="regioes-lista">
+              {REGIOES.map((r) => (
+                <option key={r} value={r} />
+              ))}
+            </datalist>
+            <input
+              list="achados-lista"
+              value={achadoNovo}
+              onChange={(e) => setAchadoNovo(e.target.value)}
+              placeholder="Achado (ex.: Calo, Micose)"
+              className={inputClass}
+            />
+            <datalist id="achados-lista">
+              {ACHADOS.map((a) => (
+                <option key={a} value={a} />
+              ))}
+            </datalist>
+            <input
+              value={obsMapa}
+              onChange={(e) => setObsMapa(e.target.value)}
+              placeholder="Observação (opcional)"
+              className={inputClass}
+            />
+            <button
+              type="button"
+              onClick={adicionarAchado}
+              className="min-h-[44px] rounded-lg border-2 border-dashed border-brand-400 px-4 font-bold text-brand-700"
+            >
+              + Adicionar achado
+            </button>
+          </div>
+
+          {(['D', 'E'] as const).map((p) => (
+            <MapaGrupo
+              key={p}
+              titulo={p === 'D' ? 'Pé direito' : 'Pé esquerdo'}
+              salvos={(mapa ?? []).filter((m) => m.pe === p)}
+              pendentes={mapaPendentes.filter((m) => m.pe === p)}
+              aoExcluir={(m) => {
+                if (confirm('Excluir este achado?')) excluirMapa.mutate(m.id)
+              }}
+              aoRemover={removerMapaPendente}
+            />
+          ))}
         </div>
 
         {/* Pagamento — registrado junto ao salvar o atendimento. */}
@@ -502,6 +634,68 @@ function PendentesGaleria({
           </div>
         ))}
       </div>
+    </div>
+  )
+}
+
+function MapaGrupo({
+  titulo,
+  salvos,
+  pendentes,
+  aoExcluir,
+  aoRemover,
+}: {
+  titulo: string
+  salvos: MapaPodologico[]
+  pendentes: MapaPendente[]
+  aoExcluir: (m: MapaPodologico) => void
+  aoRemover: (localId: string) => void
+}) {
+  if (salvos.length === 0 && pendentes.length === 0) return null
+  return (
+    <div className="mt-3">
+      <h3 className="mb-2 text-sm font-bold text-slate-500 dark:text-slate-400">{titulo}</h3>
+      <ul className="flex flex-col gap-2">
+        {salvos.map((m) => (
+          <li
+            key={m.id}
+            className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-2"
+          >
+            <span className="min-w-0 text-sm">
+              <b className="text-slate-800 dark:text-slate-100">{m.regiao}</b> — {m.achado}
+              {m.observacao ? ` (${m.observacao})` : ''}
+            </span>
+            <button
+              type="button"
+              onClick={() => aoExcluir(m)}
+              aria-label="Excluir achado"
+              className="shrink-0 text-red-600"
+            >
+              ×
+            </button>
+          </li>
+        ))}
+        {pendentes.map((m) => (
+          <li
+            key={m.localId}
+            className="flex items-center justify-between gap-2 rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-950/40 p-2"
+          >
+            <span className="min-w-0 text-sm">
+              <b className="text-slate-800 dark:text-slate-100">{m.regiao}</b> — {m.achado}
+              {m.observacao ? ` (${m.observacao})` : ''}{' '}
+              <span className="text-xs text-amber-600">a salvar</span>
+            </span>
+            <button
+              type="button"
+              onClick={() => aoRemover(m.localId)}
+              aria-label="Remover achado"
+              className="shrink-0 text-red-600"
+            >
+              ×
+            </button>
+          </li>
+        ))}
+      </ul>
     </div>
   )
 }
