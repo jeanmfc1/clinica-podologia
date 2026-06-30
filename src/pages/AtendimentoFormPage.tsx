@@ -11,7 +11,7 @@ import {
   type FotoComUrl,
 } from '../features/prontuario/api'
 import { usePaciente } from '../features/pacientes/api'
-import { useAgendamento } from '../features/agenda/api'
+import { useAgendamento, useCriarAgendamento } from '../features/agenda/api'
 import { FORMAS, useCriarPagamento } from '../features/financeiro/api'
 import type { FormaPagamento, StatusPagamento } from '../lib/types'
 import {
@@ -19,6 +19,7 @@ import {
   dataLocalISO,
   horaLocal,
   hojeISO,
+  somarDias,
 } from '../lib/format'
 import { BotaoPrimario, Campo, inputClass, PageHeader } from '../components/ui'
 import { DateInputBR } from '../components/DateInputBR'
@@ -42,6 +43,7 @@ export function AtendimentoFormPage() {
   const { data: atendimento } = useAtendimento(atId)
   const { data: agendamento } = useAgendamento(agendamentoId ?? undefined)
   const criarPagamento = useCriarPagamento()
+  const criarAgendamento = useCriarAgendamento()
   const criar = useCriarAtendimento()
   const atualizar = useAtualizarAtendimento()
   const excluir = useExcluirAtendimento()
@@ -66,6 +68,11 @@ export function AtendimentoFormPage() {
   const [formaPag, setFormaPag] = useState<FormaPagamento>('dinheiro')
   const [statusPag, setStatusPag] = useState<StatusPagamento>('pago')
   const [vencimentoPag, setVencimentoPag] = useState('')
+
+  // Retorno (cria a próxima consulta ao salvar).
+  const [agendarRetorno, setAgendarRetorno] = useState(false)
+  const [dataRetorno, setDataRetorno] = useState(somarDias(hojeISO(), 30))
+  const [horaRetorno, setHoraRetorno] = useState('09:00')
   const inputCamera = useRef<HTMLInputElement>(null)
   const inputGaleria = useRef<HTMLInputElement>(null)
 
@@ -166,6 +173,20 @@ export function AtendimentoFormPage() {
             descricao: agendamento?.procedimento?.nome ?? null,
           })
         }
+      }
+
+      // 4) Agenda o retorno (cria a próxima consulta), se marcado.
+      if (!editando && agendarRetorno && dataRetorno) {
+        const ini = combinarDataHora(dataRetorno, horaRetorno)
+        const fim = new Date(new Date(ini).getTime() + 30 * 60000).toISOString()
+        await criarAgendamento.mutateAsync({
+          paciente_id: id,
+          procedimento_id: null,
+          inicio: ini,
+          fim,
+          status: 'agendado',
+          observacao: 'Retorno',
+        })
       }
 
       pendentes.forEach((p) => URL.revokeObjectURL(p.preview))
@@ -367,6 +388,45 @@ export function AtendimentoFormPage() {
                     />
                   </Campo>
                 )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Marcar retorno — cria a próxima consulta ao salvar. */}
+        {!editando && (
+          <div className="rounded-lg border border-slate-200 bg-white p-3">
+            <label className="flex items-center gap-2 font-bold text-slate-800">
+              <input
+                type="checkbox"
+                checked={agendarRetorno}
+                onChange={(e) => setAgendarRetorno(e.target.checked)}
+                className="h-5 w-5 accent-brand-600"
+              />
+              Marcar retorno
+            </label>
+
+            {agendarRetorno && (
+              <div className="mt-3 flex gap-3">
+                <div className="flex-1">
+                  <Campo rotulo="Data do retorno">
+                    <DateInputBR
+                      value={dataRetorno}
+                      onChange={setDataRetorno}
+                      className={inputClass}
+                    />
+                  </Campo>
+                </div>
+                <div className="w-28">
+                  <Campo rotulo="Hora">
+                    <input
+                      type="time"
+                      value={horaRetorno}
+                      onChange={(e) => setHoraRetorno(e.target.value)}
+                      className={inputClass}
+                    />
+                  </Campo>
+                </div>
               </div>
             )}
           </div>
