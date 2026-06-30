@@ -115,7 +115,7 @@ export function AgendaPage() {
         <ul className="mb-6 flex flex-col gap-2">
           {proximos.map((a) => (
             <li key={a.id}>
-              <AgendamentoItem a={a} />
+              <AgendamentoItem a={a} mostrarData />
             </li>
           ))}
         </ul>
