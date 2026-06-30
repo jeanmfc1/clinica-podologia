@@ -1,17 +1,22 @@
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { usePaciente, useExcluirPaciente } from '../features/pacientes/api'
+import { useAnamnese, useAtendimentosDoPaciente } from '../features/prontuario/api'
 import {
   calcularIdade,
   formatData,
   formatTelefone,
+  horaLocal,
   linkWhatsapp,
 } from '../lib/format'
+import type { Atendimento } from '../lib/types'
 import { Aviso, PageHeader } from '../components/ui'
 
 export function PacienteDetalhePage() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { data: p, isLoading, isError } = usePaciente(id)
+  const { data: anamnese } = useAnamnese(id)
+  const { data: atendimentos } = useAtendimentosDoPaciente(id)
   const excluir = useExcluirPaciente()
 
   if (isLoading) {
@@ -82,9 +87,47 @@ export function PacienteDetalhePage() {
         </a>
       )}
 
-      {/* Próximos itens do prontuário (chegam ainda na Fase 1). */}
+      {/* Prontuário */}
       <h2 className="mb-2 mt-6 text-lg font-bold text-slate-800">Prontuário</h2>
-      <Aviso>Anamnese, atendimentos e fotos chegam nas próximas etapas.</Aviso>
+
+      {/* Anamnese */}
+      <Link
+        to={`/pacientes/${p.id}/anamnese`}
+        className="mb-4 flex items-center justify-between rounded-lg border border-slate-200 bg-white p-4"
+      >
+        <span>
+          <span className="block font-bold text-slate-800">Anamnese</span>
+          <span className="block text-sm text-slate-500">
+            {anamnese
+              ? `Atualizada em ${formatData(anamnese.atualizado_em)}`
+              : 'Ainda não preenchida'}
+          </span>
+        </span>
+        <span className="font-bold text-brand-700">{anamnese ? 'Ver' : 'Preencher'}</span>
+      </Link>
+
+      {/* Atendimentos */}
+      <div className="mb-2 flex items-center justify-between">
+        <h3 className="font-bold text-slate-800">Atendimentos</h3>
+        <Link
+          to={`/pacientes/${p.id}/atendimentos/novo`}
+          className="text-sm font-bold text-brand-700"
+        >
+          + Novo
+        </Link>
+      </div>
+
+      {!atendimentos || atendimentos.length === 0 ? (
+        <Aviso>Nenhum atendimento registrado.</Aviso>
+      ) : (
+        <ul className="flex flex-col gap-2">
+          {atendimentos.map((at) => (
+            <li key={at.id}>
+              <AtendimentoLinha pacienteId={p.id} at={at} />
+            </li>
+          ))}
+        </ul>
+      )}
 
       <button
         onClick={aoExcluir}
@@ -104,5 +147,21 @@ function Linha({ rotulo, valor }: { rotulo: string; valor: string | null | undef
       <p className="text-sm text-slate-500">{rotulo}</p>
       <p className="font-bold text-slate-800">{valor}</p>
     </div>
+  )
+}
+
+function AtendimentoLinha({ pacienteId, at }: { pacienteId: string; at: Atendimento }) {
+  return (
+    <Link
+      to={`/pacientes/${pacienteId}/atendimentos/${at.id}`}
+      className="block rounded-lg border border-slate-200 bg-white p-3"
+    >
+      <p className="font-bold text-slate-900">
+        {formatData(at.data)} · {horaLocal(at.data)}
+      </p>
+      <p className="mt-0.5 line-clamp-2 text-sm text-slate-600">
+        {at.evolucao || 'Sem descrição.'}
+      </p>
+    </Link>
   )
 }

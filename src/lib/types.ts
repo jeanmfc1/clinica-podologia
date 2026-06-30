@@ -80,3 +80,35 @@ export type AgendamentoInput = {
   status: StatusAgendamento
   observacao?: string | null
 }
+
+// ----- Prontuário -----
+
+// Atendimento (evolução): o registro do que foi feito numa consulta.
+export type Atendimento = {
+  id: string
+  clinica_id: string
+  paciente_id: string
+  agendamento_id: string | null
+  profissional_id: string
+  data: string
+  evolucao: string | null
+  created_at: string
+  updated_at: string
+}
+
+// clinica_id e profissional_id são preenchidos automaticamente pelo banco.
+export type AtendimentoInput = {
+  paciente_id: string
+  agendamento_id?: string | null
+  data: string
+  evolucao?: string | null
+}
+
+// Anamnese: ficha de saúde do paciente (uma por paciente). Respostas flexíveis.
+export type Anamnese = {
+  id: string
+  clinica_id: string
+  paciente_id: string
+  respostas_json: Record<string, unknown>
+  atualizado_em: string
+}

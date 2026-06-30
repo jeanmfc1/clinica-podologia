@@ -13,6 +13,9 @@ import { ProcedimentoFormPage } from './pages/ProcedimentoFormPage'
 import { AgendaPage } from './pages/AgendaPage'
 import { AgendamentoFormPage } from './pages/AgendamentoFormPage'
 import { GoogleAgendaPage } from './pages/GoogleAgendaPage'
+import { AtenderPage } from './pages/AtenderPage'
+import { AtendimentoFormPage } from './pages/AtendimentoFormPage'
+import { AnamneseFormPage } from './pages/AnamneseFormPage'
 
 export default function App() {
   return (
@@ -32,15 +35,16 @@ export default function App() {
               <Route path="/pacientes/novo" element={<PacienteFormPage />} />
               <Route path="/pacientes/:id" element={<PacienteDetalhePage />} />
               <Route path="/pacientes/:id/editar" element={<PacienteFormPage />} />
+              <Route path="/pacientes/:id/anamnese" element={<AnamneseFormPage />} />
               <Route
-                path="/atender"
-                element={
-                  <PlaceholderPage
-                    titulo="Atender"
-                    descricao="O atendimento de hoje, num toque."
-                  />
-                }
+                path="/pacientes/:id/atendimentos/novo"
+                element={<AtendimentoFormPage />}
               />
+              <Route
+                path="/pacientes/:id/atendimentos/:atId"
+                element={<AtendimentoFormPage />}
+              />
+              <Route path="/atender" element={<AtenderPage />} />
               <Route
                 path="/financeiro"
                 element={

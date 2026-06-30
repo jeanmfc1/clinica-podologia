@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import {
   useAgendamento,
   useAtualizarAgendamento,
@@ -187,6 +187,15 @@ export function AgendamentoFormPage() {
         <BotaoPrimario type="submit" disabled={salvando}>
           {salvando ? 'Salvando…' : 'Salvar'}
         </BotaoPrimario>
+
+        {editando && pacienteId && (
+          <Link
+            to={`/pacientes/${pacienteId}/atendimentos/novo?agendamento=${id}`}
+            className="flex min-h-[48px] items-center justify-center rounded-lg border-2 border-brand-600 px-4 font-bold text-brand-700"
+          >
+            Atender (registrar evolução)
+          </Link>
+        )}
 
         {editando && (
           <button
