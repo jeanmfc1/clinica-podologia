@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../../lib/supabase'
+import { apiGet, apiPost } from '../../lib/apiBackend'
 import type {
   Agendamento,
   AgendamentoComNomes,
@@ -9,6 +10,16 @@ import type {
 
 const CHAVE = 'agendamentos'
 const SELECT = '*, paciente:pacientes(nome), procedimento:procedimentos(nome,preco)'
+
+// Sincroniza (best-effort) um agendamento com o Google Agenda.
+// Nunca lança erro: se o Google estiver fora, a consulta é salva normalmente.
+async function sincronizarGoogle(id: string, deletar = false): Promise<void> {
+  try {
+    await apiPost('/api/google/sync', { id, deletar })
+  } catch {
+    // ignora: sincronização é best-effort
+  }
+}
 
 // Agendamentos de um dia (data local 'AAAA-MM-DD').
 export function useAgendamentosDoDia(dataISO: string) {
@@ -92,6 +103,7 @@ export function useCriarAgendamento() {
         .select()
         .single()
       if (error) throw error
+      await sincronizarGoogle(data.id)
       return data
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: [CHAVE] }),
@@ -107,6 +119,7 @@ export function useAtualizarAgendamento() {
         .update({ ...args.input, updated_at: new Date().toISOString() })
         .eq('id', args.id)
       if (error) throw error
+      await sincronizarGoogle(args.id)
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: [CHAVE] }),
   })
@@ -122,6 +135,8 @@ export function useMudarStatus() {
         .update({ status: args.status, updated_at: new Date().toISOString() })
         .eq('id', args.id)
       if (error) throw error
+      // Cancelar apaga o evento; outros status atualizam.
+      await sincronizarGoogle(args.id)
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: [CHAVE] }),
   })
@@ -131,9 +146,33 @@ export function useExcluirAgendamento() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: async (id: string) => {
+      // Apaga o evento no Google ANTES de remover a linha (ainda dá pra ler o id do evento).
+      await sincronizarGoogle(id, true)
       const { error } = await supabase.from('agendamentos').delete().eq('id', id)
       if (error) throw error
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: [CHAVE] }),
+  })
+}
+
+// ----- Leitura dos eventos do próprio Google Agenda (pra mostrar no app) -----
+export type GoogleEvento = {
+  id: string
+  titulo: string
+  inicio: string | null
+  fim: string | null
+  diaInteiro: boolean
+}
+
+export function useGoogleEventos(iniISO: string, fimISO: string, ativo = true) {
+  return useQuery({
+    queryKey: ['google-eventos', iniISO, fimISO],
+    enabled: ativo,
+    staleTime: 60_000,
+    retry: false,
+    queryFn: () =>
+      apiGet<{ conectado: boolean; eventos: GoogleEvento[] }>(
+        `/api/google/events?ini=${encodeURIComponent(iniISO)}&fim=${encodeURIComponent(fimISO)}`,
+      ),
   })
 }

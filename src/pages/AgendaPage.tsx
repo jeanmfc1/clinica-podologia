@@ -2,17 +2,21 @@ import { useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import {
   useAgendamentosIntervalo,
+  useGoogleEventos,
   useProximosAgendamentos,
+  type GoogleEvento,
 } from '../features/agenda/api'
 import { AgendamentoItem } from '../features/agenda/AgendamentoItem'
 import type { AgendamentoComNomes } from '../lib/types'
 import {
   dataLocalISO,
   dataPorExtenso,
+  horaLocal,
   hojeISO,
   somarDias,
 } from '../lib/format'
 import { Aviso, PageHeader } from '../components/ui'
+import { APP_VERSION, APP_VERSION_DATA } from '../lib/version'
 
 type Modo = 'mes' | 'semana' | 'dia'
 
@@ -54,6 +58,8 @@ export function AgendaPage() {
   const range = useMemo(() => calcularRange(modo, refDate), [modo, refDate])
   const { data: lista, isLoading } = useAgendamentosIntervalo(range.iniISO, range.fimISO)
   const { data: proximos } = useProximosAgendamentos(8)
+  // Eventos do Google só na visão "Dia" (pra ver os compromissos pessoais junto).
+  const { data: google } = useGoogleEventos(range.iniISO, range.fimISO, modo === 'dia')
 
   // Agrupa por dia (chave 'AAAA-MM-DD').
   const porDia = useMemo(() => {
@@ -208,22 +214,65 @@ export function AgendaPage() {
 
       {/* Visão DIA */}
       {modo === 'dia' && (
-        <DiaLista doDia={porDia.get(refDate) ?? []} />
+        <DiaLista doDia={porDia.get(refDate) ?? []} google={google?.eventos ?? []} />
       )}
+
+      {/* Versão do app — confere se está rodando a mais nova. */}
+      <p className="mt-8 text-center text-xs text-slate-400">
+        Pés de Anjo · versão {APP_VERSION} ({APP_VERSION_DATA})
+      </p>
     </section>
   )
 }
 
-function DiaLista({ doDia }: { doDia: AgendamentoComNomes[] }) {
-  if (doDia.length === 0) return <Aviso>Nenhuma consulta neste dia.</Aviso>
+function DiaLista({
+  doDia,
+  google,
+}: {
+  doDia: AgendamentoComNomes[]
+  google: GoogleEvento[]
+}) {
+  if (doDia.length === 0 && google.length === 0)
+    return <Aviso>Nenhuma consulta neste dia.</Aviso>
+
   return (
-    <ul className="flex flex-col gap-2">
-      {doDia.map((a) => (
-        <li key={a.id}>
-          <AgendamentoItem a={a} />
-        </li>
-      ))}
-    </ul>
+    <div className="flex flex-col gap-5">
+      {doDia.length > 0 && (
+        <ul className="flex flex-col gap-2">
+          {doDia.map((a) => (
+            <li key={a.id}>
+              <AgendamentoItem a={a} />
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {google.length > 0 && (
+        <div>
+          <h3 className="mb-2 flex items-center gap-2 text-sm font-bold text-slate-500">
+            <span className="inline-block h-2.5 w-2.5 rounded-full bg-blue-500" />
+            Do seu Google Agenda
+          </h3>
+          <ul className="flex flex-col gap-2">
+            {google.map((e) => (
+              <li key={e.id}>
+                <GoogleEventoItem e={e} />
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function GoogleEventoItem({ e }: { e: GoogleEvento }) {
+  const hora = e.diaInteiro ? 'Dia inteiro' : e.inicio ? horaLocal(e.inicio) : ''
+  return (
+    <div className="flex items-center gap-3 rounded-lg border border-blue-200 bg-blue-50/60 p-3">
+      <span className="w-16 shrink-0 text-sm font-bold tabular-nums text-blue-700">{hora}</span>
+      <span className="flex-1 text-slate-700">{e.titulo}</span>
+    </div>
   )
 }
 

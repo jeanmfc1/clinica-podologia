@@ -135,6 +135,105 @@ function emailDoIdToken(idToken?: string): string | null {
   }
 }
 
+// ---------- Google Calendar (sincronização) ----------
+type Integracao = {
+  clinica_id: string
+  refresh_token: string | null
+  access_token: string | null
+  access_token_exp: string | null
+  calendar_id: string
+}
+
+async function lerIntegracao(env: Env, clinicaId: string): Promise<Integracao | null> {
+  const r = await sb(
+    env,
+    `google_integracao?clinica_id=eq.${clinicaId}&select=clinica_id,refresh_token,access_token,access_token_exp,calendar_id`,
+  )
+  const rows = (await r.json()) as Integracao[]
+  return rows[0] ?? null
+}
+
+// Devolve um access_token válido; renova pelo refresh_token se estiver vencido.
+async function tokenValido(env: Env, reg: Integracao): Promise<string | null> {
+  if (!reg.refresh_token) return null
+  const margem = 60_000 // renova 1 min antes de vencer
+  if (
+    reg.access_token &&
+    reg.access_token_exp &&
+    new Date(reg.access_token_exp).getTime() - Date.now() > margem
+  ) {
+    return reg.access_token
+  }
+  const r = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'content-type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      client_id: env.GOOGLE_CLIENT_ID,
+      client_secret: env.GOOGLE_CLIENT_SECRET,
+      refresh_token: reg.refresh_token,
+      grant_type: 'refresh_token',
+    }),
+  })
+  const tk = (await r.json()) as { access_token?: string; expires_in?: number }
+  if (!tk.access_token) return null
+  const exp = new Date(Date.now() + (tk.expires_in ?? 3600) * 1000).toISOString()
+  await sb(env, `google_integracao?clinica_id=eq.${reg.clinica_id}`, {
+    method: 'PATCH',
+    headers: { Prefer: 'return=minimal' },
+    body: JSON.stringify({ access_token: tk.access_token, access_token_exp: exp }),
+  })
+  return tk.access_token
+}
+
+type AgendaRow = {
+  id: string
+  inicio: string
+  fim: string
+  status: string
+  observacao: string | null
+  google_event_id: string | null
+  paciente: { nome: string } | null
+  procedimento: { nome: string } | null
+}
+
+type GEvent = {
+  id?: string
+  summary?: string
+  status?: string
+  start?: { dateTime?: string; date?: string }
+  end?: { dateTime?: string; date?: string }
+  extendedProperties?: { private?: { origem?: string } }
+}
+
+function corpoEvento(a: AgendaRow) {
+  const titulo =
+    (a.paciente?.nome ?? 'Consulta') + (a.procedimento ? ' — ' + a.procedimento.nome : '')
+  const linhas = ['Pés de Anjo · Podologia']
+  if (a.observacao) linhas.push('', a.observacao)
+  return {
+    summary: titulo,
+    description: linhas.join('\n'),
+    start: { dateTime: a.inicio, timeZone: 'America/Sao_Paulo' },
+    end: { dateTime: a.fim, timeZone: 'America/Sao_Paulo' },
+    // Marca o evento como criado pelo app (pra não duplicar na leitura).
+    extendedProperties: { private: { origem: 'pesdeanjo', agendamento_id: a.id } },
+  }
+}
+
+function calFetch(token: string, calId: string, path: string, init: RequestInit = {}) {
+  return fetch(
+    `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calId)}${path}`,
+    {
+      ...init,
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'content-type': 'application/json',
+        ...(init.headers || {}),
+      },
+    },
+  )
+}
+
 function paginaSimples(titulo: string, msg: string, app: string): Response {
   const html = `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -243,6 +342,122 @@ export default {
       if (!clinicaId) return json({ erro: 'não autenticado' }, 401)
       await sb(env, `google_integracao?clinica_id=eq.${clinicaId}`, { method: 'DELETE' })
       return json({ ok: true })
+    }
+
+    // Sincroniza um agendamento com o Google (criar/atualizar/excluir o evento).
+    // Best-effort: o app chama, mas nunca depende disso pra salvar a consulta.
+    if (p === '/api/google/sync' && request.method === 'POST') {
+      const clinicaId = await clinicaDoUsuario(request, env)
+      if (!clinicaId) return json({ erro: 'não autenticado' }, 401)
+      const body = (await request.json().catch(() => ({}))) as { id?: string; deletar?: boolean }
+      if (!body.id) return json({ erro: 'id ausente' }, 400)
+
+      const reg = await lerIntegracao(env, clinicaId)
+      if (!reg?.refresh_token) return json({ synced: false, motivo: 'desconectado' })
+      const token = await tokenValido(env, reg)
+      if (!token) return json({ synced: false, motivo: 'sem token' })
+
+      const ar = await sb(
+        env,
+        `agendamentos?id=eq.${body.id}&clinica_id=eq.${clinicaId}&select=id,inicio,fim,status,observacao,google_event_id,paciente:pacientes(nome),procedimento:procedimentos(nome)`,
+      )
+      const a = ((await ar.json()) as AgendaRow[])[0]
+      if (!a) return json({ synced: false, motivo: 'não encontrado' })
+
+      const calId = reg.calendar_id || 'primary'
+
+      // Excluído ou cancelado → apaga o evento, se existir.
+      if (body.deletar || a.status === 'cancelado') {
+        if (a.google_event_id) {
+          await calFetch(token, calId, `/events/${a.google_event_id}`, { method: 'DELETE' })
+        }
+        // Se foi só cancelamento (linha continua), zera a referência.
+        if (!body.deletar && a.google_event_id) {
+          await sb(env, `agendamentos?id=eq.${a.id}`, {
+            method: 'PATCH',
+            headers: { Prefer: 'return=minimal' },
+            body: JSON.stringify({
+              google_event_id: null,
+              google_sync_em: new Date().toISOString(),
+            }),
+          })
+        }
+        return json({ synced: true, google_event_id: null })
+      }
+
+      // Criar ou atualizar o evento.
+      const corpo = corpoEvento(a)
+      let resp: Response
+      if (a.google_event_id) {
+        resp = await calFetch(token, calId, `/events/${a.google_event_id}`, {
+          method: 'PATCH',
+          body: JSON.stringify(corpo),
+        })
+        if (resp.status === 404) {
+          // Evento sumiu no Google → recria.
+          resp = await calFetch(token, calId, `/events`, {
+            method: 'POST',
+            body: JSON.stringify(corpo),
+          })
+        }
+      } else {
+        resp = await calFetch(token, calId, `/events`, {
+          method: 'POST',
+          body: JSON.stringify(corpo),
+        })
+      }
+      if (!resp.ok) {
+        console.log('calendar sync error', resp.status, await resp.text())
+        return json({ synced: false, motivo: 'erro Google', status: resp.status })
+      }
+      const eventId = ((await resp.json()) as GEvent).id ?? a.google_event_id
+      await sb(env, `agendamentos?id=eq.${a.id}`, {
+        method: 'PATCH',
+        headers: { Prefer: 'return=minimal' },
+        body: JSON.stringify({
+          google_event_id: eventId,
+          google_sync_em: new Date().toISOString(),
+        }),
+      })
+      return json({ synced: true, google_event_id: eventId })
+    }
+
+    // Lista eventos do Google num intervalo (pra mostrar dentro do app).
+    if (p === '/api/google/events') {
+      const clinicaId = await clinicaDoUsuario(request, env)
+      if (!clinicaId) return json({ erro: 'não autenticado' }, 401)
+      const ini = url.searchParams.get('ini')
+      const fim = url.searchParams.get('fim')
+      if (!ini || !fim) return json({ erro: 'intervalo ausente' }, 400)
+
+      const reg = await lerIntegracao(env, clinicaId)
+      if (!reg?.refresh_token) return json({ conectado: false, eventos: [] })
+      const token = await tokenValido(env, reg)
+      if (!token) return json({ conectado: false, eventos: [] })
+
+      const calId = reg.calendar_id || 'primary'
+      const q = new URLSearchParams({
+        timeMin: ini,
+        timeMax: fim,
+        singleEvents: 'true',
+        orderBy: 'startTime',
+        maxResults: '50',
+      })
+      const resp = await calFetch(token, calId, `/events?${q}`)
+      if (!resp.ok) return json({ conectado: true, eventos: [] })
+      const items = ((await resp.json()) as { items?: GEvent[] }).items ?? []
+      const eventos = items
+        .filter((e) => e.status !== 'cancelled')
+        // Esconde o que o próprio app criou (já aparece como consulta).
+        .filter((e) => e.extendedProperties?.private?.origem !== 'pesdeanjo')
+        .map((e) => ({
+          id: e.id,
+          titulo: e.summary ?? '(sem título)',
+          inicio: e.start?.dateTime ?? e.start?.date ?? null,
+          fim: e.end?.dateTime ?? e.end?.date ?? null,
+          diaInteiro: !!e.start?.date,
+        }))
+      return json({ conectado: true, eventos })
     }
 
     return json({ erro: 'rota não encontrada' }, 404)
