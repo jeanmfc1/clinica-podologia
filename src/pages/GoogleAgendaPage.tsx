@@ -52,12 +52,12 @@ export function GoogleAgendaPage() {
     <section>
       <PageHeader titulo="Google Agenda" voltar />
 
-      <p className="mb-4 text-slate-600">
+      <p className="mb-4 text-slate-600 dark:text-slate-300">
         Conecte a agenda do Google para sincronizar as consultas.
       </p>
 
       {recemConectado && (
-        <div className="mb-4 rounded-lg border border-green-300 bg-green-50 p-3 font-bold text-green-800">
+        <div className="mb-4 rounded-lg border border-green-300 bg-green-50 dark:bg-green-950/40 p-3 font-bold text-green-800">
           Conta conectada com sucesso!
         </div>
       )}
@@ -70,11 +70,11 @@ export function GoogleAgendaPage() {
       )}
 
       {!carregando && status && (
-        <div className="rounded-lg border border-slate-200 bg-white p-4">
+        <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4">
           {status.conectado ? (
             <>
-              <p className="text-sm text-slate-500">Conectado como</p>
-              <p className="mb-4 font-bold text-slate-800">{status.email ?? 'conta Google'}</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Conectado como</p>
+              <p className="mb-4 font-bold text-slate-800 dark:text-slate-100">{status.email ?? 'conta Google'}</p>
               <button
                 onClick={desconectar}
                 className="min-h-[44px] w-full rounded-lg border border-red-300 px-4 font-bold text-red-700"
@@ -84,7 +84,7 @@ export function GoogleAgendaPage() {
             </>
           ) : (
             <>
-              <p className="mb-4 text-slate-700">Nenhuma conta conectada ainda.</p>
+              <p className="mb-4 text-slate-700 dark:text-slate-200">Nenhuma conta conectada ainda.</p>
               <BotaoPrimario onClick={conectar} className="w-full">
                 Conectar Google Agenda
               </BotaoPrimario>
@@ -93,7 +93,7 @@ export function GoogleAgendaPage() {
         </div>
       )}
 
-      <p className="mt-4 text-sm text-slate-500">
+      <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">
         Ao conectar, pode aparecer um aviso do Google de “app não verificado”. É
         normal para uso próprio — toque em “Avançado” e depois em “Acessar”.
       </p>

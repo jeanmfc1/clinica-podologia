@@ -101,7 +101,7 @@ export function PagamentoFormPage() {
 
       <form onSubmit={aoEnviar} className="flex flex-col gap-4">
         {/* Entrada ou saída */}
-        <div className="grid grid-cols-2 gap-1 rounded-lg bg-slate-100 p-1">
+        <div className="grid grid-cols-2 gap-1 rounded-lg bg-slate-100 dark:bg-slate-700 p-1">
           {(
             [
               ['entrada', 'Entrada (entrou)'],
@@ -116,9 +116,9 @@ export function PagamentoFormPage() {
                 'min-h-[44px] rounded-md font-bold ' +
                 (tipo === t
                   ? t === 'entrada'
-                    ? 'bg-white text-green-700 shadow-sm'
-                    : 'bg-white text-red-700 shadow-sm'
-                  : 'text-slate-500')
+                    ? 'bg-white dark:bg-slate-800 text-green-700 shadow-sm'
+                    : 'bg-white dark:bg-slate-800 text-red-700 shadow-sm'
+                  : 'text-slate-500 dark:text-slate-400')
               }
             >
               {rotulo}
@@ -167,7 +167,7 @@ export function PagamentoFormPage() {
 
         {/* Pago ou fiado */}
         <Campo rotulo="Situação">
-          <div className="grid grid-cols-2 gap-1 rounded-lg bg-slate-100 p-1">
+          <div className="grid grid-cols-2 gap-1 rounded-lg bg-slate-100 dark:bg-slate-700 p-1">
             {(
               [
                 ['pago', entrada ? 'Recebido' : 'Pago'],
@@ -180,7 +180,7 @@ export function PagamentoFormPage() {
                 onClick={() => setStatus(s)}
                 className={
                   'min-h-[44px] rounded-md font-bold ' +
-                  (status === s ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-500')
+                  (status === s ? 'bg-white dark:bg-slate-800 text-brand-700 shadow-sm' : 'text-slate-500 dark:text-slate-400')
                 }
               >
                 {rotulo}

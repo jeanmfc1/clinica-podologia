@@ -116,9 +116,9 @@ export function AgendarPublicoPage() {
   if (sucesso) {
     return (
       <Casca>
-        <div className="rounded-xl border border-green-300 bg-green-50 p-6 text-center">
+        <div className="rounded-xl border border-green-300 bg-green-50 dark:bg-green-950/40 p-6 text-center">
           <h2 className="text-xl font-bold text-green-800">Pedido enviado! 🎉</h2>
-          <p className="mt-2 text-slate-700">
+          <p className="mt-2 text-slate-700 dark:text-slate-200">
             Recebemos sua solicitação. <strong>{clinica.profissional}</strong> vai confirmar o
             horário e entrar em contato com você pelo WhatsApp.
           </p>
@@ -153,8 +153,8 @@ export function AgendarPublicoPage() {
             ))}
           </select>
           {proc && (
-            <div className="mt-2 flex items-center justify-between rounded-lg bg-brand-50 px-4 py-3">
-              <span className="text-sm text-slate-600">{proc.duracao_min} min</span>
+            <div className="mt-2 flex items-center justify-between rounded-lg bg-brand-50 dark:bg-brand-900/40 px-4 py-3">
+              <span className="text-sm text-slate-600 dark:text-slate-300">{proc.duracao_min} min</span>
               <span className="text-lg font-bold text-brand-800">{formatReal(proc.preco)}</span>
             </div>
           )}
@@ -166,9 +166,9 @@ export function AgendarPublicoPage() {
           {procId && data && (
             <div className="mt-3">
               {carregandoSlots ? (
-                <p className="text-sm text-slate-500">Buscando horários livres…</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400">Buscando horários livres…</p>
               ) : slots.length === 0 ? (
-                <p className="text-sm text-slate-500">
+                <p className="text-sm text-slate-500 dark:text-slate-400">
                   Nenhum horário livre neste dia. Tente outra data.
                 </p>
               ) : (
@@ -182,7 +182,7 @@ export function AgendarPublicoPage() {
                         'min-h-[44px] rounded-lg border font-bold ' +
                         (slot === s
                           ? 'border-brand-600 bg-brand-700 text-white'
-                          : 'border-slate-300 bg-white text-slate-700')
+                          : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200')
                       }
                     >
                       {s}
@@ -225,14 +225,14 @@ export function AgendarPublicoPage() {
 
         {/* 4. Ficha de saúde */}
         <Secao numero={4} titulo="Ficha de saúde">
-          <p className="mb-2 text-sm text-slate-500">Marque o que se aplica a você.</p>
-          <div className="flex flex-col divide-y divide-slate-100 rounded-lg border border-slate-200 bg-white">
+          <p className="mb-2 text-sm text-slate-500 dark:text-slate-400">Marque o que se aplica a você.</p>
+          <div className="flex flex-col divide-y divide-slate-100 dark:divide-slate-700 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
             {ANAMNESE_SIM_NAO.map((q) => (
               <label
                 key={q.chave}
                 className="flex min-h-[48px] cursor-pointer items-center justify-between px-4"
               >
-                <span className="text-slate-700">{q.rotulo}</span>
+                <span className="text-slate-700 dark:text-slate-200">{q.rotulo}</span>
                 <input
                   type="checkbox"
                   checked={respostas[q.chave] === true}
@@ -262,7 +262,7 @@ export function AgendarPublicoPage() {
               onChange={(e) => setConfirmo(e.target.checked)}
               className="mt-1 h-5 w-5 accent-brand-600"
             />
-            <span className="text-sm text-slate-600">
+            <span className="text-sm text-slate-600 dark:text-slate-300">
               Confirmo que as informações de saúde acima estão corretas.
             </span>
           </label>
@@ -277,7 +277,7 @@ export function AgendarPublicoPage() {
         <BotaoPrimario type="submit" disabled={enviando}>
           {enviando ? 'Enviando…' : 'Solicitar agendamento'}
         </BotaoPrimario>
-        <p className="text-center text-xs text-slate-400">
+        <p className="text-center text-xs text-slate-400 dark:text-slate-500">
           O horário só é confirmado após {clinica.profissional} aprovar.
         </p>
       </form>
@@ -288,14 +288,14 @@ export function AgendarPublicoPage() {
 // Moldura da página pública (sem as abas do app).
 function Casca({ children }: { children: React.ReactNode }) {
   return (
-    <div className="mx-auto min-h-screen max-w-md bg-slate-50 px-4 pb-10">
+    <div className="mx-auto min-h-screen max-w-md bg-slate-50 dark:bg-slate-800 px-4 pb-10">
       <header className="flex flex-col items-center py-6 text-center">
         <img src={clinica.logoUrl} alt="" className="h-16 w-16 rounded-full object-contain" />
         <h1 className="mt-2 text-xl font-bold text-brand-800">{clinica.nome}</h1>
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-slate-500 dark:text-slate-400">
           {clinica.profissional} · {clinica.cidadeUf}
         </p>
-        <p className="mt-1 font-bold text-slate-700">Agende sua consulta</p>
+        <p className="mt-1 font-bold text-slate-700 dark:text-slate-200">Agende sua consulta</p>
       </header>
       {children}
     </div>
@@ -313,7 +313,7 @@ function Secao({
 }) {
   return (
     <section>
-      <h2 className="mb-2 flex items-center gap-2 font-bold text-slate-800">
+      <h2 className="mb-2 flex items-center gap-2 font-bold text-slate-800 dark:text-slate-100">
         <span className="flex h-6 w-6 items-center justify-center rounded-full bg-brand-700 text-sm text-white">
           {numero}
         </span>

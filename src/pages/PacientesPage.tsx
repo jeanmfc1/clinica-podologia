@@ -47,14 +47,14 @@ export function PacientesPage() {
             <li key={p.id}>
               <Link
                 to={`/pacientes/${p.id}`}
-                className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-3"
+                className="flex items-center gap-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3"
               >
                 <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand-100 font-bold text-brand-800">
                   {p.nome.charAt(0).toUpperCase()}
                 </span>
                 <span className="min-w-0">
-                  <span className="block truncate font-bold text-slate-900">{p.nome}</span>
-                  <span className="block text-sm text-slate-500">
+                  <span className="block truncate font-bold text-slate-900 dark:text-slate-50">{p.nome}</span>
+                  <span className="block text-sm text-slate-500 dark:text-slate-400">
                     {formatTelefone(p.telefone) || 'Sem telefone'}
                   </span>
                 </span>

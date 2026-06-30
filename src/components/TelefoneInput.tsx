@@ -73,7 +73,7 @@ export function TelefoneInput({
         value={dial}
         onChange={aoTrocarPais}
         aria-label="País"
-        className="min-h-[48px] rounded-lg border border-slate-300 bg-white px-2 text-base"
+        className="min-h-[48px] rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-2 text-base"
       >
         {PAISES.map((p) => (
           <option key={p.iso} value={p.dial}>

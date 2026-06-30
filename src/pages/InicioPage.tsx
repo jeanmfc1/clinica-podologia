@@ -38,7 +38,7 @@ export function InicioPage() {
     <section>
       <header className="mb-4">
         <h1 className="text-xl font-bold text-brand-800">{clinica.nome}</h1>
-        <p className="text-sm capitalize text-slate-500">{dataPorExtenso(hoje)}</p>
+        <p className="text-sm capitalize text-slate-500 dark:text-slate-400">{dataPorExtenso(hoje)}</p>
       </header>
 
       {/* Resumo rápido */}
@@ -79,7 +79,7 @@ export function InicioPage() {
       )}
 
       {/* Versão do app — confere se está rodando a mais nova. */}
-      <p className="mt-8 text-center text-xs text-slate-400">
+      <p className="mt-8 text-center text-xs text-slate-400 dark:text-slate-500">
         Pés de Anjo · versão {APP_VERSION} ({APP_VERSION_DATA})
       </p>
     </section>
@@ -90,7 +90,7 @@ function Mini({
   titulo,
   valor,
   sub,
-  cor = 'text-slate-900',
+  cor = 'text-slate-900 dark:text-slate-50',
 }: {
   titulo: string
   valor: string
@@ -98,10 +98,10 @@ function Mini({
   cor?: string
 }) {
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-3">
-      <p className="text-xs text-slate-500">{titulo}</p>
+    <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3">
+      <p className="text-xs text-slate-500 dark:text-slate-400">{titulo}</p>
       <p className={'text-base font-bold ' + cor}>{valor}</p>
-      {sub && <p className="text-xs text-slate-400">{sub}</p>}
+      {sub && <p className="text-xs text-slate-400 dark:text-slate-500">{sub}</p>}
     </div>
   )
 }
@@ -117,7 +117,7 @@ function SecaoTitulo({
 }) {
   return (
     <div className="mb-2 flex items-center justify-between">
-      <h2 className="font-bold text-slate-800">{titulo}</h2>
+      <h2 className="font-bold text-slate-800 dark:text-slate-100">{titulo}</h2>
       {link && (
         <Link to={link} className="text-sm font-bold text-brand-700">
           {linkRotulo}
@@ -129,7 +129,7 @@ function SecaoTitulo({
 
 function Vazio({ children }: { children: React.ReactNode }) {
   return (
-    <p className="mb-5 rounded-lg border border-dashed border-slate-200 p-3 text-center text-sm text-slate-400">
+    <p className="mb-5 rounded-lg border border-dashed border-slate-200 dark:border-slate-700 p-3 text-center text-sm text-slate-400 dark:text-slate-500">
       {children}
     </p>
   )

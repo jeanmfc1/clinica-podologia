@@ -34,14 +34,14 @@ export function LoginPage() {
         className="mx-auto mb-4 h-28 w-auto"
       />
       <h1 className="text-center text-2xl font-bold text-brand-800">{clinica.nome}</h1>
-      <p className="mb-6 mt-1 text-center text-slate-600">
+      <p className="mb-6 mt-1 text-center text-slate-600 dark:text-slate-300">
         {clinica.profissional} · Podóloga
       </p>
 
       {!supabaseConfigurado && (
         <div
           role="alert"
-          className="mb-5 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900"
+          className="mb-5 rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-950/40 p-3 text-sm text-amber-900"
         >
           O login ainda não está conectado. Falta configurar o Supabase (arquivo
           .env). Até lá, esta tela é só demonstração.
@@ -50,7 +50,7 @@ export function LoginPage() {
 
       <form onSubmit={aoEnviar} className="flex flex-col gap-4">
         <label className="flex flex-col gap-1">
-          <span className="font-bold text-slate-700">E-mail</span>
+          <span className="font-bold text-slate-700 dark:text-slate-200">E-mail</span>
           <input
             type="email"
             inputMode="email"
@@ -61,12 +61,12 @@ export function LoginPage() {
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="min-h-[48px] rounded-lg border border-slate-300 bg-white px-3 text-base"
+            className="min-h-[48px] rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 text-base"
           />
         </label>
 
         <label className="flex flex-col gap-1">
-          <span className="font-bold text-slate-700">Senha</span>
+          <span className="font-bold text-slate-700 dark:text-slate-200">Senha</span>
           <div className="relative">
             <input
               type={mostrarSenha ? 'text' : 'password'}
@@ -77,7 +77,7 @@ export function LoginPage() {
               required
               value={senha}
               onChange={(e) => setSenha(e.target.value)}
-              className="min-h-[48px] w-full rounded-lg border border-slate-300 bg-white pl-3 pr-20 text-base"
+              className="min-h-[48px] w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 pl-3 pr-20 text-base"
             />
             <button
               type="button"

@@ -47,18 +47,18 @@ export function AnamneseFormPage() {
       <PageHeader titulo="Anamnese" voltar />
 
       {paciente && (
-        <p className="mb-4 text-slate-600">
-          Paciente: <span className="font-bold text-slate-800">{paciente.nome}</span>
+        <p className="mb-4 text-slate-600 dark:text-slate-300">
+          Paciente: <span className="font-bold text-slate-800 dark:text-slate-100">{paciente.nome}</span>
         </p>
       )}
 
       {isLoading ? (
-        <p className="text-slate-500">Carregando…</p>
+        <p className="text-slate-500 dark:text-slate-400">Carregando…</p>
       ) : (
         <form onSubmit={aoEnviar} className="flex flex-col gap-5">
           <div>
-            <h2 className="mb-2 font-bold text-slate-800">Histórico de saúde</h2>
-            <div className="flex flex-col divide-y divide-slate-100 rounded-lg border border-slate-200 bg-white">
+            <h2 className="mb-2 font-bold text-slate-800 dark:text-slate-100">Histórico de saúde</h2>
+            <div className="flex flex-col divide-y divide-slate-100 dark:divide-slate-700 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
               {ANAMNESE_SIM_NAO.map((q) => {
                 const marcado = respostas[q.chave] === true
                 return (
@@ -66,7 +66,7 @@ export function AnamneseFormPage() {
                     key={q.chave}
                     className="flex min-h-[48px] cursor-pointer items-center justify-between px-4"
                   >
-                    <span className="text-slate-700">{q.rotulo}</span>
+                    <span className="text-slate-700 dark:text-slate-200">{q.rotulo}</span>
                     <input
                       type="checkbox"
                       checked={marcado}
@@ -77,7 +77,7 @@ export function AnamneseFormPage() {
                 )
               })}
             </div>
-            <p className="mt-1 text-xs text-slate-400">Marque o que se aplica ao paciente.</p>
+            <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">Marque o que se aplica ao paciente.</p>
           </div>
 
           {ANAMNESE_TEXTO.map((q) => (

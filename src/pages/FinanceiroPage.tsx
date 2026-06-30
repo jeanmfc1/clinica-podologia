@@ -73,15 +73,15 @@ export function FinanceiroPage() {
         <button
           onClick={() => mudarMes(-1)}
           aria-label="Mês anterior"
-          className="flex h-11 w-11 items-center justify-center rounded-lg border border-slate-300 text-slate-600"
+          className="flex h-11 w-11 items-center justify-center rounded-lg border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300"
         >
           ‹
         </button>
-        <span className="flex-1 text-center font-bold capitalize text-slate-900">{tituloMes}</span>
+        <span className="flex-1 text-center font-bold capitalize text-slate-900 dark:text-slate-50">{tituloMes}</span>
         <button
           onClick={() => mudarMes(1)}
           aria-label="Próximo mês"
-          className="flex h-11 w-11 items-center justify-center rounded-lg border border-slate-300 text-slate-600"
+          className="flex h-11 w-11 items-center justify-center rounded-lg border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300"
         >
           ›
         </button>
@@ -96,7 +96,7 @@ export function FinanceiroPage() {
 
       {/* A receber (fiado) */}
       {pendentes && pendentes.length > 0 && (
-        <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 p-3">
+        <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-950/40 p-3">
           <div className="mb-2 flex items-center justify-between">
             <span className="font-bold text-amber-800">A receber (fiado)</span>
             <span className="font-bold text-amber-800">{formatReal(aReceber)}</span>
@@ -105,13 +105,13 @@ export function FinanceiroPage() {
             {pendentes.map((p) => (
               <li
                 key={p.id}
-                className="flex items-center justify-between gap-2 rounded-lg bg-white p-2"
+                className="flex items-center justify-between gap-2 rounded-lg bg-white dark:bg-slate-800 p-2"
               >
                 <Link to={`/financeiro/${p.id}`} className="min-w-0 flex-1">
-                  <span className="block truncate font-bold text-slate-900">
+                  <span className="block truncate font-bold text-slate-900 dark:text-slate-50">
                     {p.paciente?.nome ?? p.descricao ?? 'A receber'}
                   </span>
-                  <span className="block text-xs text-slate-500">
+                  <span className="block text-xs text-slate-500 dark:text-slate-400">
                     {formatReal(Number(p.valor))}
                     {p.vencimento ? ` · vence ${formatData(p.vencimento)}` : ''}
                   </span>
@@ -147,8 +147,8 @@ export function FinanceiroPage() {
 
 function Card({ titulo, valor, cor }: { titulo: string; valor: number; cor: string }) {
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-3">
-      <p className="text-xs text-slate-500">{titulo}</p>
+    <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3">
+      <p className="text-xs text-slate-500 dark:text-slate-400">{titulo}</p>
       <p className={'text-base font-bold ' + cor}>{formatReal(valor)}</p>
     </div>
   )
@@ -159,13 +159,13 @@ function PagamentoLinha({ p }: { p: PagamentoComPaciente }) {
   return (
     <Link
       to={`/financeiro/${p.id}`}
-      className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-3"
+      className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3"
     >
       <span className="min-w-0">
-        <span className="block truncate font-bold text-slate-900">
+        <span className="block truncate font-bold text-slate-900 dark:text-slate-50">
           {p.paciente?.nome ?? p.descricao ?? (entrada ? 'Entrada' : 'Saída')}
         </span>
-        <span className="block text-sm text-slate-500">
+        <span className="block text-sm text-slate-500 dark:text-slate-400">
           {formatData(p.data)} · {p.categoria ? p.categoria + ' · ' : ''}
           {rotuloForma(p.forma)}
           {p.status === 'pendente' ? ' · fiado' : ''}

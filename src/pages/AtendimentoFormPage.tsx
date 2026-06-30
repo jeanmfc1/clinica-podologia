@@ -220,14 +220,14 @@ export function AtendimentoFormPage() {
       <PageHeader titulo={editando ? 'Editar atendimento' : 'Novo atendimento'} voltar />
 
       {paciente && (
-        <p className="mb-1 text-slate-600">
-          Paciente: <span className="font-bold text-slate-800">{paciente.nome}</span>
+        <p className="mb-1 text-slate-600 dark:text-slate-300">
+          Paciente: <span className="font-bold text-slate-800 dark:text-slate-100">{paciente.nome}</span>
         </p>
       )}
       {agendamento?.procedimento && (
-        <p className="mb-4 text-slate-600">
+        <p className="mb-4 text-slate-600 dark:text-slate-300">
           Procedimento:{' '}
-          <span className="font-bold text-slate-800">{agendamento.procedimento.nome}</span>
+          <span className="font-bold text-slate-800 dark:text-slate-100">{agendamento.procedimento.nome}</span>
         </p>
       )}
 
@@ -262,8 +262,8 @@ export function AtendimentoFormPage() {
 
         {/* Fotos — escolhidas aqui e enviadas junto ao salvar. */}
         <div>
-          <p className="mb-1 font-bold text-slate-700">Fotos</p>
-          <div className="mb-2 grid grid-cols-2 gap-1 rounded-lg bg-slate-100 p-1">
+          <p className="mb-1 font-bold text-slate-700 dark:text-slate-200">Fotos</p>
+          <div className="mb-2 grid grid-cols-2 gap-1 rounded-lg bg-slate-100 dark:bg-slate-700 p-1">
             {(['antes', 'depois'] as const).map((m) => (
               <button
                 key={m}
@@ -271,7 +271,7 @@ export function AtendimentoFormPage() {
                 onClick={() => setMomento(m)}
                 className={
                   'min-h-[40px] rounded-md font-bold capitalize ' +
-                  (momento === m ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-500')
+                  (momento === m ? 'bg-white dark:bg-slate-800 text-brand-700 shadow-sm' : 'text-slate-500 dark:text-slate-400')
                 }
               >
                 {m}
@@ -313,7 +313,7 @@ export function AtendimentoFormPage() {
               🖼️ Galeria
             </button>
           </div>
-          <p className="mt-1 text-xs text-slate-400">Adicionando em: {momento}</p>
+          <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">Adicionando em: {momento}</p>
 
           {/* Em espera (ainda não enviadas) */}
           <PendentesGaleria titulo="Antes (a enviar)" fotos={pendAntes} aoRemover={removerPendente} />
@@ -338,8 +338,8 @@ export function AtendimentoFormPage() {
 
         {/* Pagamento — registrado junto ao salvar o atendimento. */}
         {!editando && (
-          <div className="rounded-lg border border-slate-200 bg-white p-3">
-            <label className="flex items-center gap-2 font-bold text-slate-800">
+          <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3">
+            <label className="flex items-center gap-2 font-bold text-slate-800 dark:text-slate-100">
               <input
                 type="checkbox"
                 checked={registrarPag}
@@ -373,7 +373,7 @@ export function AtendimentoFormPage() {
                     ))}
                   </select>
                 </Campo>
-                <div className="grid grid-cols-2 gap-1 rounded-lg bg-slate-100 p-1">
+                <div className="grid grid-cols-2 gap-1 rounded-lg bg-slate-100 dark:bg-slate-700 p-1">
                   {(
                     [
                       ['pago', 'Recebido'],
@@ -386,7 +386,7 @@ export function AtendimentoFormPage() {
                       onClick={() => setStatusPag(s)}
                       className={
                         'min-h-[40px] rounded-md font-bold ' +
-                        (statusPag === s ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-500')
+                        (statusPag === s ? 'bg-white dark:bg-slate-800 text-brand-700 shadow-sm' : 'text-slate-500 dark:text-slate-400')
                       }
                     >
                       {r}
@@ -409,8 +409,8 @@ export function AtendimentoFormPage() {
 
         {/* Marcar retorno — cria a próxima consulta ao salvar. */}
         {!editando && (
-          <div className="rounded-lg border border-slate-200 bg-white p-3">
-            <label className="flex items-center gap-2 font-bold text-slate-800">
+          <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3">
+            <label className="flex items-center gap-2 font-bold text-slate-800 dark:text-slate-100">
               <input
                 type="checkbox"
                 checked={agendarRetorno}
@@ -518,7 +518,7 @@ function GaleriaFotos({
   if (fotos.length === 0) return null
   return (
     <div className="mt-3">
-      <h3 className="mb-2 text-sm font-bold text-slate-500">{titulo}</h3>
+      <h3 className="mb-2 text-sm font-bold text-slate-500 dark:text-slate-400">{titulo}</h3>
       <div className="grid grid-cols-3 gap-2">
         {fotos.map((f) => (
           <div key={f.id} className="relative">
@@ -531,7 +531,7 @@ function GaleriaFotos({
                 />
               </a>
             ) : (
-              <div className="aspect-square w-full rounded-lg bg-slate-100" />
+              <div className="aspect-square w-full rounded-lg bg-slate-100 dark:bg-slate-700" />
             )}
             <button
               type="button"

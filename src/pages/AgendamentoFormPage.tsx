@@ -160,7 +160,7 @@ export function AgendamentoFormPage() {
           </div>
         </div>
 
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-slate-500 dark:text-slate-400">
           Duração: {duracao} min{procEscolhido ? '' : ' (escolha o procedimento)'}
         </p>
 

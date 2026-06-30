@@ -8,6 +8,18 @@
     <meta name="theme-color" content="#0f766e" />
     <meta name="description" content="Gestão da clínica de podologia: agenda, pacientes, prontuário e financeiro." />
     <title>Pés de Anjo · Podologia</title>
+    <script>
+      // Aplica o tema salvo antes de desenhar (evita "piscar" branco).
+      (function () {
+        try {
+          var t = localStorage.getItem('tema') || 'auto'
+          var escuro =
+            t === 'escuro' ||
+            (t === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches)
+          document.documentElement.classList.toggle('dark', escuro)
+        } catch (e) {}
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>

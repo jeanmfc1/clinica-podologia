@@ -102,7 +102,7 @@ export function ProcedimentoFormPage() {
             onChange={(e) => setAtivo(e.target.checked)}
             className="h-5 w-5"
           />
-          <span className="font-bold text-slate-700">
+          <span className="font-bold text-slate-700 dark:text-slate-200">
             Ativo (aparece ao marcar consulta)
           </span>
         </label>

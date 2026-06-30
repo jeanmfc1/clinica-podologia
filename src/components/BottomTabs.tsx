@@ -73,7 +73,7 @@ export function BottomTabs() {
   return (
     <nav
       aria-label="Navegação principal"
-      className="sticky bottom-0 z-10 grid grid-cols-6 border-t border-slate-200 bg-white"
+      className="sticky bottom-0 z-10 grid grid-cols-6 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800"
     >
       {tabs.map((tab) => (
         <NavLink
@@ -83,7 +83,7 @@ export function BottomTabs() {
             [
               // Alvo de toque alto (>= 44px) e legível.
               'flex min-h-[60px] flex-col items-center justify-center gap-1 text-[10px] font-bold',
-              isActive ? 'text-brand-700' : 'text-slate-500',
+              isActive ? 'text-brand-700' : 'text-slate-500 dark:text-slate-400',
             ].join(' ')
           }
         >

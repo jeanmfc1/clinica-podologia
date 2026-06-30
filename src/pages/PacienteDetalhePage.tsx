@@ -56,14 +56,14 @@ export function PacienteDetalhePage() {
         acao={
           <Link
             to={`/pacientes/${p.id}/editar`}
-            className="min-h-[44px] rounded-lg border border-slate-300 px-3 py-2 font-bold text-slate-700"
+            className="min-h-[44px] rounded-lg border border-slate-300 dark:border-slate-600 px-3 py-2 font-bold text-slate-700 dark:text-slate-200"
           >
             Editar
           </Link>
         }
       />
 
-      <div className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-white p-4">
+      <div className="flex flex-col gap-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4">
         <Linha rotulo="Telefone" valor={formatTelefone(p.telefone)} />
         <Linha
           rotulo="Nascimento"
@@ -91,16 +91,16 @@ export function PacienteDetalhePage() {
       )}
 
       {/* Prontuário */}
-      <h2 className="mb-2 mt-6 text-lg font-bold text-slate-800">Prontuário</h2>
+      <h2 className="mb-2 mt-6 text-lg font-bold text-slate-800 dark:text-slate-100">Prontuário</h2>
 
       {/* Anamnese */}
       <Link
         to={`/pacientes/${p.id}/anamnese`}
-        className="mb-4 flex items-center justify-between rounded-lg border border-slate-200 bg-white p-4"
+        className="mb-4 flex items-center justify-between rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4"
       >
         <span>
-          <span className="block font-bold text-slate-800">Anamnese</span>
-          <span className="block text-sm text-slate-500">
+          <span className="block font-bold text-slate-800 dark:text-slate-100">Anamnese</span>
+          <span className="block text-sm text-slate-500 dark:text-slate-400">
             {anamnese
               ? `Atualizada em ${formatData(anamnese.atualizado_em)}`
               : 'Ainda não preenchida'}
@@ -111,7 +111,7 @@ export function PacienteDetalhePage() {
 
       {/* Consultas (agendamentos) */}
       <div className="mb-2 flex items-center justify-between">
-        <h3 className="font-bold text-slate-800">Consultas</h3>
+        <h3 className="font-bold text-slate-800 dark:text-slate-100">Consultas</h3>
         <Link to={`/agenda/novo?paciente=${p.id}`} className="text-sm font-bold text-brand-700">
           + Marcar
         </Link>
@@ -131,7 +131,7 @@ export function PacienteDetalhePage() {
 
       {/* Atendimentos */}
       <div className="mb-2 flex items-center justify-between">
-        <h3 className="font-bold text-slate-800">Atendimentos</h3>
+        <h3 className="font-bold text-slate-800 dark:text-slate-100">Atendimentos</h3>
         <Link
           to={`/pacientes/${p.id}/atendimentos/novo`}
           className="text-sm font-bold text-brand-700"
@@ -167,8 +167,8 @@ function Linha({ rotulo, valor }: { rotulo: string; valor: string | null | undef
   if (!valor) return null
   return (
     <div>
-      <p className="text-sm text-slate-500">{rotulo}</p>
-      <p className="font-bold text-slate-800">{valor}</p>
+      <p className="text-sm text-slate-500 dark:text-slate-400">{rotulo}</p>
+      <p className="font-bold text-slate-800 dark:text-slate-100">{valor}</p>
     </div>
   )
 }
@@ -178,13 +178,13 @@ function ConsultaLinha({ c }: { c: AgendamentoComNomes }) {
   return (
     <Link
       to={`/agenda/${c.id}`}
-      className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-3"
+      className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3"
     >
       <span className="min-w-0">
-        <span className="block font-bold text-slate-900">
+        <span className="block font-bold text-slate-900 dark:text-slate-50">
           {formatData(c.inicio)} · {horaLocal(c.inicio)}
         </span>
-        <span className="block truncate text-sm text-slate-500">
+        <span className="block truncate text-sm text-slate-500 dark:text-slate-400">
           {c.procedimento?.nome ?? '—'}
           {c.origem === 'online' ? ' · Online' : ''}
         </span>
@@ -200,12 +200,12 @@ function AtendimentoLinha({ pacienteId, at }: { pacienteId: string; at: Atendime
   return (
     <Link
       to={`/pacientes/${pacienteId}/atendimentos/${at.id}`}
-      className="block rounded-lg border border-slate-200 bg-white p-3"
+      className="block rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3"
     >
-      <p className="font-bold text-slate-900">
+      <p className="font-bold text-slate-900 dark:text-slate-50">
         {formatData(at.data)} · {horaLocal(at.data)}
       </p>
-      <p className="mt-0.5 line-clamp-2 text-sm text-slate-600">
+      <p className="mt-0.5 line-clamp-2 text-sm text-slate-600 dark:text-slate-300">
         {at.evolucao || 'Sem descrição.'}
       </p>
     </Link>

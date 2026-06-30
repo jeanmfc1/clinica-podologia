@@ -106,7 +106,7 @@ export function AgendaPage() {
       />
 
       {/* Próximos agendamentos */}
-      <h2 className="mb-2 font-bold text-slate-800">Próximos agendamentos</h2>
+      <h2 className="mb-2 font-bold text-slate-800 dark:text-slate-100">Próximos agendamentos</h2>
       {proximos && proximos.length === 0 && (
         <Aviso>Nenhuma consulta marcada daqui pra frente.</Aviso>
       )}
@@ -121,14 +121,14 @@ export function AgendaPage() {
       )}
 
       {/* Seletor de visão */}
-      <div className="mb-3 grid grid-cols-3 gap-1 rounded-lg bg-slate-100 p-1">
+      <div className="mb-3 grid grid-cols-3 gap-1 rounded-lg bg-slate-100 dark:bg-slate-700 p-1">
         {(['mes', 'semana', 'dia'] as Modo[]).map((m) => (
           <button
             key={m}
             onClick={() => setModo(m)}
             className={
               'min-h-[40px] rounded-md font-bold ' +
-              (modo === m ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-500')
+              (modo === m ? 'bg-white dark:bg-slate-800 text-brand-700 shadow-sm' : 'text-slate-500 dark:text-slate-400')
             }
           >
             {m === 'mes' ? 'Mês' : m === 'semana' ? 'Semana' : 'Dia'}
@@ -141,20 +141,20 @@ export function AgendaPage() {
         <button
           onClick={() => navegar(-1)}
           aria-label="Anterior"
-          className="flex h-11 w-11 items-center justify-center rounded-lg border border-slate-300 text-slate-600"
+          className="flex h-11 w-11 items-center justify-center rounded-lg border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300"
         >
           ‹
         </button>
         <button
           onClick={() => setRefDate(hojeISO())}
-          className="flex-1 rounded-lg bg-white px-3 py-2 text-center font-bold capitalize text-slate-900"
+          className="flex-1 rounded-lg bg-white dark:bg-slate-800 px-3 py-2 text-center font-bold capitalize text-slate-900 dark:text-slate-50"
         >
           {tituloPeriodo}
         </button>
         <button
           onClick={() => navegar(1)}
           aria-label="Próximo"
-          className="flex h-11 w-11 items-center justify-center rounded-lg border border-slate-300 text-slate-600"
+          className="flex h-11 w-11 items-center justify-center rounded-lg border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300"
         >
           ›
         </button>
@@ -185,7 +185,7 @@ export function AgendaPage() {
             return (
               <div key={k}>
                 <div className="mb-1 flex items-center justify-between">
-                  <span className="font-bold capitalize text-slate-800">
+                  <span className="font-bold capitalize text-slate-800 dark:text-slate-100">
                     {d.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' })}
                   </span>
                   <Link to={`/agenda/novo?dia=${k}`} className="text-sm font-bold text-brand-700">
@@ -193,7 +193,7 @@ export function AgendaPage() {
                   </Link>
                 </div>
                 {doDia.length === 0 ? (
-                  <p className="rounded-lg border border-dashed border-slate-200 p-2 text-center text-sm text-slate-400">
+                  <p className="rounded-lg border border-dashed border-slate-200 dark:border-slate-700 p-2 text-center text-sm text-slate-400 dark:text-slate-500">
                     livre
                   </p>
                 ) : (
@@ -244,7 +244,7 @@ function DiaLista({
 
       {google.length > 0 && (
         <div>
-          <h3 className="mb-2 flex items-center gap-2 text-sm font-bold text-slate-500">
+          <h3 className="mb-2 flex items-center gap-2 text-sm font-bold text-slate-500 dark:text-slate-400">
             <span className="inline-block h-2.5 w-2.5 rounded-full bg-blue-500" />
             Do seu Google Agenda
           </h3>
@@ -266,7 +266,7 @@ function GoogleEventoItem({ e }: { e: GoogleEvento }) {
   return (
     <div className="flex items-center gap-3 rounded-lg border border-blue-200 bg-blue-50/60 p-3">
       <span className="w-16 shrink-0 text-sm font-bold tabular-nums text-blue-700">{hora}</span>
-      <span className="flex-1 text-slate-700">{e.titulo}</span>
+      <span className="flex-1 text-slate-700 dark:text-slate-200">{e.titulo}</span>
     </div>
   )
 }
@@ -287,7 +287,7 @@ function MesGrade({
 
   return (
     <div>
-      <div className="grid grid-cols-7 text-center text-xs font-bold text-slate-400">
+      <div className="grid grid-cols-7 text-center text-xs font-bold text-slate-400 dark:text-slate-500">
         {SEMANA_LABELS.map((l) => (
           <div key={l} className="py-1">
             {l}
@@ -307,8 +307,8 @@ function MesGrade({
               onClick={() => aoTocarDia(k)}
               className={
                 'flex aspect-square flex-col items-center justify-center rounded-lg border text-sm ' +
-                (noMes ? 'bg-white text-slate-800' : 'bg-slate-50 text-slate-300') +
-                (ehHoje ? ' border-brand-600 font-bold' : ' border-slate-200')
+                (noMes ? 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100' : 'bg-slate-50 dark:bg-slate-800 text-slate-300') +
+                (ehHoje ? ' border-brand-600 font-bold' : ' border-slate-200 dark:border-slate-700')
               }
             >
               <span>{d.getDate()}</span>
