@@ -54,7 +54,8 @@ export function AtendimentoFormPage() {
   const [momento, setMomento] = useState<'antes' | 'depois'>('antes')
   const [pendentes, setPendentes] = useState<FotoPendente[]>([])
   const [salvando, setSalvando] = useState(false)
-  const inputFoto = useRef<HTMLInputElement>(null)
+  const inputCamera = useRef<HTMLInputElement>(null)
+  const inputGaleria = useRef<HTMLInputElement>(null)
 
   // Escolher fotos: ficam em espera (com preview) até salvar o atendimento.
   function aoEscolherFotos(e: React.ChangeEvent<HTMLInputElement>) {
@@ -204,21 +205,41 @@ export function AtendimentoFormPage() {
             ))}
           </div>
 
+          {/* Câmera (tira na hora) */}
           <input
-            ref={inputFoto}
+            ref={inputCamera}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            onChange={aoEscolherFotos}
+            className="hidden"
+          />
+          {/* Galeria (escolhe arquivos já salvos) */}
+          <input
+            ref={inputGaleria}
             type="file"
             accept="image/*"
             multiple
             onChange={aoEscolherFotos}
             className="hidden"
           />
-          <button
-            type="button"
-            onClick={() => inputFoto.current?.click()}
-            className="flex min-h-[48px] w-full items-center justify-center rounded-lg border-2 border-dashed border-brand-400 px-4 font-bold text-brand-700"
-          >
-            + Adicionar foto ({momento})
-          </button>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => inputCamera.current?.click()}
+              className="flex min-h-[48px] items-center justify-center gap-2 rounded-lg border-2 border-dashed border-brand-400 px-3 font-bold text-brand-700"
+            >
+              📷 Câmera
+            </button>
+            <button
+              type="button"
+              onClick={() => inputGaleria.current?.click()}
+              className="flex min-h-[48px] items-center justify-center gap-2 rounded-lg border-2 border-dashed border-brand-400 px-3 font-bold text-brand-700"
+            >
+              🖼️ Galeria
+            </button>
+          </div>
+          <p className="mt-1 text-xs text-slate-400">Adicionando em: {momento}</p>
 
           {/* Em espera (ainda não enviadas) */}
           <PendentesGaleria titulo="Antes (a enviar)" fotos={pendAntes} aoRemover={removerPendente} />
