@@ -10,6 +10,7 @@ import {
 import { usePacientes } from '../features/pacientes/api'
 import { useProcedimentos } from '../features/procedimentos/api'
 import { STATUS_INFO, STATUS_LISTA } from '../features/agenda/status'
+import { linkLembrete } from '../features/agenda/lembrete'
 import type { StatusAgendamento } from '../lib/types'
 import {
   combinarDataHora,
@@ -207,6 +208,17 @@ export function AgendamentoFormPage() {
         <BotaoPrimario type="submit" disabled={salvando}>
           {salvando ? 'Salvando…' : 'Salvar'}
         </BotaoPrimario>
+
+        {editando && agendamento && linkLembrete(agendamento) && (
+          <a
+            href={linkLembrete(agendamento)!}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex min-h-[48px] items-center justify-center gap-2 rounded-lg bg-[#25D366] px-4 font-bold text-white"
+          >
+            💬 Lembrar no WhatsApp
+          </a>
+        )}
 
         {editando && pacienteId && (
           <Link

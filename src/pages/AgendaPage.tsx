@@ -7,6 +7,7 @@ import {
   type GoogleEvento,
 } from '../features/agenda/api'
 import { AgendamentoItem } from '../features/agenda/AgendamentoItem'
+import { linkLembrete } from '../features/agenda/lembrete'
 import type { AgendamentoComNomes } from '../lib/types'
 import {
   dataLocalISO,
@@ -234,11 +235,28 @@ function DiaLista({
     <div className="flex flex-col gap-5">
       {doDia.length > 0 && (
         <ul className="flex flex-col gap-2">
-          {doDia.map((a) => (
-            <li key={a.id}>
-              <AgendamentoItem a={a} />
-            </li>
-          ))}
+          {doDia.map((a) => {
+            const zap = linkLembrete(a)
+            return (
+              <li key={a.id} className="flex items-stretch gap-2">
+                <div className="min-w-0 flex-1">
+                  <AgendamentoItem a={a} />
+                </div>
+                {zap && (
+                  <a
+                    href={zap}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={`Lembrar ${a.paciente?.nome ?? 'paciente'} no WhatsApp`}
+                    title="Lembrar no WhatsApp"
+                    className="flex w-12 shrink-0 items-center justify-center rounded-lg bg-[#25D366] text-xl text-white"
+                  >
+                    💬
+                  </a>
+                )}
+              </li>
+            )
+          })}
         </ul>
       )}
 
