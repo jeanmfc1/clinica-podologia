@@ -1,17 +1,16 @@
 import { createClient } from '@supabase/supabase-js'
 
-// As credenciais ficam em variáveis de ambiente (arquivo .env, nunca versionado).
-// VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY são públicas por natureza no front;
-// a segurança real vem das políticas RLS no banco.
-const url = import.meta.env.VITE_SUPABASE_URL as string | undefined
-const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined
+// URL e chave PÚBLICA (anon) do Supabase. São públicas por natureza (vão no
+// front de qualquer forma); a segurança real vem das políticas RLS no banco.
+// Ficam como padrão aqui para o build funcionar em qualquer lugar (inclusive na
+// nuvem, sem .env). O .env local, se existir, tem prioridade.
+const URL_PADRAO = 'https://byqxokwfzzmrbqsbibeg.supabase.co'
+const ANON_PADRAO =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ5cXhva3dmenptcmJxc2JpYmVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE5MjM4MTksImV4cCI6MjA5NzQ5OTgxOX0.voeRbGmpnxAzzc-LpekczAEZpkNDGknUU2qFUoy2JR8'
 
-// Sinaliza para a UI se ainda falta configurar o Supabase.
+const url = (import.meta.env.VITE_SUPABASE_URL as string | undefined) ?? URL_PADRAO
+const anonKey = (import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined) ?? ANON_PADRAO
+
 export const supabaseConfigurado = Boolean(url && anonKey)
 
-// Cria o cliente mesmo sem env (com placeholders) para o app rodar localmente
-// e mostrar uma mensagem amigável até as credenciais existirem.
-export const supabase = createClient(
-  url ?? 'https://placeholder.supabase.co',
-  anonKey ?? 'placeholder-anon-key',
-)
+export const supabase = createClient(url, anonKey)
