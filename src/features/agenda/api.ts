@@ -9,7 +9,8 @@ import type {
 } from '../../lib/types'
 
 const CHAVE = 'agendamentos'
-const SELECT = '*, paciente:pacientes(nome), procedimento:procedimentos(nome,preco)'
+const SELECT =
+  '*, paciente:pacientes(nome,telefone), procedimento:procedimentos(nome,preco)'
 
 // Sincroniza (best-effort) um agendamento com o Google Agenda.
 // Nunca lança erro: se o Google estiver fora, a consulta é salva normalmente.

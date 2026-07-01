@@ -69,7 +69,7 @@ export type Agendamento = {
 
 // Agendamento com nome do paciente e do procedimento (via join).
 export type AgendamentoComNomes = Agendamento & {
-  paciente: { nome: string } | null
+  paciente: { nome: string; telefone: string | null } | null
   procedimento: { nome: string; preco: number } | null
 }
 
