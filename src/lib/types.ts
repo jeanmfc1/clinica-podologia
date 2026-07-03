@@ -208,3 +208,16 @@ export type ItemEstoqueInput = {
   minimo?: number
   observacao?: string | null
 }
+
+// Material usado num atendimento (baixa o estoque). nome/unidade são "foto"
+// do momento, pra continuar legível mesmo se o item sair do estoque.
+export type MaterialUsado = {
+  id: string
+  clinica_id: string
+  atendimento_id: string
+  estoque_id: string | null
+  nome: string
+  unidade: string
+  quantidade: number
+  created_at: string
+}

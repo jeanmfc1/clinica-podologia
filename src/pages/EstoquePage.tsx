@@ -1,9 +1,12 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   estaFaltando,
   useAjustarQuantidade,
   useEstoque,
+  useSeedEstoque,
 } from '../features/estoque/api'
+import { INVENTARIO_INICIAL } from '../features/estoque/inventarioInicial'
 import type { ItemEstoque } from '../lib/types'
 import { Aviso, PageHeader } from '../components/ui'
 
@@ -14,7 +17,18 @@ function formatQtd(n: number): string {
 
 export function EstoquePage() {
   const { data: lista, isLoading, isError } = useEstoque()
+  const seed = useSeedEstoque()
+  const [erroSeed, setErroSeed] = useState<string | null>(null)
   const faltando = (lista ?? []).filter(estaFaltando)
+
+  async function carregarInventario() {
+    setErroSeed(null)
+    try {
+      await seed.mutateAsync(INVENTARIO_INICIAL)
+    } catch {
+      setErroSeed('Não foi possível carregar o inventário. Tente de novo.')
+    }
+  }
 
   return (
     <section>
@@ -35,10 +49,30 @@ export function EstoquePage() {
       {isError && <Aviso>Não foi possível carregar o estoque.</Aviso>}
 
       {lista && lista.length === 0 && (
-        <Aviso>
-          Nenhum material cadastrado ainda. Toque em <b>+ Novo</b> pra começar
-          (lâminas, cremes, descartáveis…).
-        </Aviso>
+        <div className="flex flex-col gap-4">
+          <Aviso>
+            Nenhum material cadastrado ainda. Carregue o inventário da Pés de Anjo
+            ou toque em <b>+ Novo</b> pra adicionar um por um.
+          </Aviso>
+          <button
+            onClick={carregarInventario}
+            disabled={seed.isPending}
+            className="min-h-[48px] rounded-lg bg-brand-700 px-4 font-bold text-white disabled:opacity-60"
+          >
+            {seed.isPending
+              ? 'Carregando…'
+              : `Carregar inventário da Pés de Anjo (${INVENTARIO_INICIAL.length} itens)`}
+          </button>
+          <p className="text-center text-sm text-slate-500 dark:text-slate-400">
+            Cadastra seus materiais com as quantidades atuais. Você pode editar
+            tudo depois (inclusive o mínimo pra avisar).
+          </p>
+          {erroSeed && (
+            <p role="alert" className="text-center font-bold text-red-700">
+              {erroSeed}
+            </p>
+          )}
+        </div>
       )}
 
       {/* Alerta do que está acabando. */}
