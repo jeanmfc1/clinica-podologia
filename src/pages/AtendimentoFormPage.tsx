@@ -61,9 +61,12 @@ type MapaPendente = {
 type MaterialPendente = {
   localId: string
   estoqueId: string
+  tipo: 'unidade' | 'lote'
   nome: string
   unidade: string
   quantidade: number
+  tamanhoLote: number | null
+  fecharLote: boolean
 }
 
 // Mostra número inteiro quando não tem casas; senão, com vírgula.
@@ -134,7 +137,9 @@ export function AtendimentoFormPage() {
   const [materiaisPendentes, setMateriaisPendentes] = useState<MaterialPendente[]>([])
   const [matSelId, setMatSelId] = useState('')
   const [matQtd, setMatQtd] = useState('1')
+  const [matFecharLote, setMatFecharLote] = useState(false)
   const matSelecionado = (estoque ?? []).find((e) => e.id === matSelId)
+  const matEhLote = matSelecionado?.tipo === 'lote'
 
   function adicionarMaterial() {
     if (!matSelecionado) return
@@ -145,13 +150,17 @@ export function AtendimentoFormPage() {
       {
         localId: crypto.randomUUID(),
         estoqueId: matSelecionado.id,
+        tipo: matSelecionado.tipo,
         nome: matSelecionado.nome,
-        unidade: matSelecionado.unidade,
+        unidade: matSelecionado.tipo === 'lote' ? 'uso' : matSelecionado.unidade,
         quantidade: q,
+        tamanhoLote: matSelecionado.tamanho_lote,
+        fecharLote: matSelecionado.tipo === 'lote' ? matFecharLote : false,
       },
     ])
     setMatSelId('')
     setMatQtd('1')
+    setMatFecharLote(false)
   }
 
   function removerMaterialPendente(localId: string) {
@@ -298,15 +307,18 @@ export function AtendimentoFormPage() {
         }
       }
 
-      // Grava os materiais usados (baixa o estoque de cada um).
+      // Grava os materiais usados (baixa o estoque / conta usos no lote).
       if (atendimentoId) {
         for (const m of materiaisPendentes) {
           await registrarMaterial.mutateAsync({
             atendimentoId,
             estoqueId: m.estoqueId,
+            tipo: m.tipo,
             nome: m.nome,
             unidade: m.unidade,
             quantidade: m.quantidade,
+            tamanhoLote: m.tamanhoLote,
+            fecharLote: m.fecharLote,
           })
         }
       }
@@ -561,13 +573,15 @@ export function AtendimentoFormPage() {
                   <option value="">Escolha um material…</option>
                   {(estoque ?? []).map((e) => (
                     <option key={e.id} value={e.id}>
-                      {e.nome} ({formatQtd(e.quantidade)} {e.unidade})
+                      {e.tipo === 'lote'
+                        ? `${e.nome} (por lote)`
+                        : `${e.nome} (${formatQtd(e.quantidade)} ${e.unidade})`}
                     </option>
                   ))}
                 </select>
                 <div className="flex items-end gap-3">
                   <div className="flex-1">
-                    <Campo rotulo="Quantidade">
+                    <Campo rotulo={matEhLote ? 'Usos neste atendimento' : 'Quantidade'}>
                       <input
                         inputMode="decimal"
                         value={matQtd}
@@ -577,9 +591,20 @@ export function AtendimentoFormPage() {
                     </Campo>
                   </div>
                   <span className="min-h-[48px] shrink-0 self-end pb-3 text-slate-500 dark:text-slate-400">
-                    {matSelecionado?.unidade ?? ''}
+                    {matEhLote ? 'uso(s)' : matSelecionado?.unidade ?? ''}
                   </span>
                 </div>
+                {matEhLote && (
+                  <label className="flex items-center gap-2 text-sm font-bold text-slate-700 dark:text-slate-200">
+                    <input
+                      type="checkbox"
+                      checked={matFecharLote}
+                      onChange={(e) => setMatFecharLote(e.target.checked)}
+                      className="h-5 w-5 accent-brand-600"
+                    />
+                    🔴 Esse frasco acabou agora
+                  </label>
+                )}
                 <button
                   type="button"
                   onClick={adicionarMaterial}
@@ -875,7 +900,8 @@ function MateriaisLista({
         >
           <span className="min-w-0 text-sm">
             <b className="text-slate-800 dark:text-slate-100">{m.nome}</b> —{' '}
-            {formatQtd(m.quantidade)} {m.unidade}{' '}
+            {formatQtd(m.quantidade)} {m.unidade}
+            {m.fecharLote ? ' · frasco acabou' : ''}{' '}
             <span className="text-xs text-amber-600">a salvar</span>
           </span>
           <button

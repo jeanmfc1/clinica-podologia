@@ -4,10 +4,11 @@ import {
   estaFaltando,
   useAjustarQuantidade,
   useEstoque,
+  useLotesAbertos,
   useSeedEstoque,
 } from '../features/estoque/api'
 import { INVENTARIO_INICIAL } from '../features/estoque/inventarioInicial'
-import type { ItemEstoque } from '../lib/types'
+import type { ItemEstoque, Lote } from '../lib/types'
 import { Aviso, PageHeader } from '../components/ui'
 
 // Mostra número inteiro quando não tem casas; senão, com vírgula.
@@ -17,6 +18,7 @@ function formatQtd(n: number): string {
 
 export function EstoquePage() {
   const { data: lista, isLoading, isError } = useEstoque()
+  const { data: lotesAbertos } = useLotesAbertos()
   const seed = useSeedEstoque()
   const [erroSeed, setErroSeed] = useState<string | null>(null)
   const faltando = (lista ?? []).filter(estaFaltando)
@@ -92,7 +94,11 @@ export function EstoquePage() {
         <ul className="flex flex-col gap-2">
           {lista.map((item) => (
             <li key={item.id}>
-              <ItemLinha item={item} formatQtd={formatQtd} />
+              <ItemLinha
+                item={item}
+                lote={lotesAbertos?.[item.id]}
+                formatQtd={formatQtd}
+              />
             </li>
           ))}
         </ul>
@@ -103,17 +109,28 @@ export function EstoquePage() {
 
 function ItemLinha({
   item,
+  lote,
   formatQtd,
 }: {
   item: ItemEstoque
+  lote?: Lote
   formatQtd: (n: number) => string
 }) {
   const ajustar = useAjustarQuantidade()
   const falta = estaFaltando(item)
+  const ehLote = item.tipo === 'lote'
 
   function mudar(delta: number) {
     ajustar.mutate({ id: item.id, atual: item.quantidade, delta })
   }
+
+  // Subtítulo: itens de lote mostram o frasco aberto e a reserva.
+  const subtitulo = ehLote
+    ? (lote
+        ? `frasco aberto: ${formatQtd(lote.usos)} uso${lote.usos === 1 ? '' : 's'}`
+        : 'sem frasco aberto') +
+      ` · reserva: ${formatQtd(item.quantidade)}`
+    : `${formatQtd(item.quantidade)} ${item.unidade}`
 
   return (
     <div
@@ -129,7 +146,7 @@ function ItemLinha({
           {item.nome}
         </span>
         <span className="block truncate text-sm text-slate-500 dark:text-slate-400">
-          {formatQtd(item.quantidade)} {item.unidade}
+          {subtitulo}
           {item.categoria ? ` · ${item.categoria}` : ''}
           {falta ? ' · acabando' : ''}
         </span>

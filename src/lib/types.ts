@@ -185,7 +185,12 @@ export type Anamnese = {
 
 // ----- Estoque -----
 
+// 'unidade': conta por unidade (baixa 1 por uso).
+// 'lote': líquido/creme — conta usos por frasco aberto (ver Lote).
+export type TipoEstoque = 'unidade' | 'lote'
+
 // Item de estoque (material): quantidade atual e mínimo pra avisar.
+// Em 'lote', quantidade = frascos de reserva (fechados) e unidade = ml/g.
 export type ItemEstoque = {
   id: string
   clinica_id: string
@@ -194,6 +199,8 @@ export type ItemEstoque = {
   unidade: string
   quantidade: number
   minimo: number
+  tipo: TipoEstoque
+  tamanho_lote: number | null
   observacao: string | null
   created_at: string
   updated_at: string
@@ -206,16 +213,33 @@ export type ItemEstoqueInput = {
   unidade?: string
   quantidade?: number
   minimo?: number
+  tipo?: TipoEstoque
+  tamanho_lote?: number | null
   observacao?: string | null
+}
+
+// Frasco de um item 'lote'. Conta usos; fecha quando acaba.
+export type Lote = {
+  id: string
+  clinica_id: string
+  estoque_id: string
+  rotulo: string | null
+  tamanho: number | null
+  usos: number
+  aberto_em: string
+  fechado_em: string | null
+  created_at: string
 }
 
 // Material usado num atendimento (baixa o estoque). nome/unidade são "foto"
 // do momento, pra continuar legível mesmo se o item sair do estoque.
+// Em item 'lote', quantidade = nº de usos e lote_id aponta o frasco.
 export type MaterialUsado = {
   id: string
   clinica_id: string
   atendimento_id: string
   estoque_id: string | null
+  lote_id: string | null
   nome: string
   unidade: string
   quantidade: number
