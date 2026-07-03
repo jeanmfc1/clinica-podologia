@@ -18,7 +18,18 @@ import {
 import { usePaciente } from '../features/pacientes/api'
 import { useAgendamento, useCriarAgendamento, useMudarStatus } from '../features/agenda/api'
 import { FORMAS, useCriarPagamento } from '../features/financeiro/api'
-import type { FormaPagamento, MapaPodologico, StatusPagamento } from '../lib/types'
+import {
+  useEstoque,
+  useExcluirMaterial,
+  useMateriaisDoAtendimento,
+  useRegistrarMaterial,
+} from '../features/estoque/api'
+import type {
+  FormaPagamento,
+  MapaPodologico,
+  MaterialUsado,
+  StatusPagamento,
+} from '../lib/types'
 import {
   combinarDataHora,
   dataLocalISO,
@@ -46,6 +57,23 @@ type MapaPendente = {
   observacao: string
 }
 
+// Material escolhido mas ainda não gravado (baixa o estoque ao salvar).
+type MaterialPendente = {
+  localId: string
+  estoqueId: string
+  tipo: 'unidade' | 'lote'
+  nome: string
+  unidade: string
+  quantidade: number
+  tamanhoLote: number | null
+  fecharLote: boolean
+}
+
+// Mostra número inteiro quando não tem casas; senão, com vírgula.
+function formatQtd(n: number): string {
+  return Number.isInteger(n) ? String(n) : n.toLocaleString('pt-BR')
+}
+
 export function AtendimentoFormPage() {
   const { id, atId } = useParams() // id = paciente; atId = atendimento (ao editar)
   const editando = !!atId
@@ -70,6 +98,10 @@ export function AtendimentoFormPage() {
   const { data: mapa } = useMapaDoAtendimento(atId)
   const criarMapa = useCriarMapa()
   const excluirMapa = useExcluirMapa()
+  const { data: estoque } = useEstoque()
+  const { data: materiais } = useMateriaisDoAtendimento(atId)
+  const registrarMaterial = useRegistrarMaterial()
+  const excluirMaterial = useExcluirMaterial()
 
   const agora = new Date()
   const [data, setData] = useState(hojeISO())
@@ -100,6 +132,40 @@ export function AtendimentoFormPage() {
   const [regiaoNova, setRegiaoNova] = useState('')
   const [achadoNovo, setAchadoNovo] = useState('')
   const [obsMapa, setObsMapa] = useState('')
+
+  // Materiais usados (em espera até salvar) + campos do novo material.
+  const [materiaisPendentes, setMateriaisPendentes] = useState<MaterialPendente[]>([])
+  const [matSelId, setMatSelId] = useState('')
+  const [matQtd, setMatQtd] = useState('1')
+  const [matFecharLote, setMatFecharLote] = useState(false)
+  const matSelecionado = (estoque ?? []).find((e) => e.id === matSelId)
+  const matEhLote = matSelecionado?.tipo === 'lote'
+
+  function adicionarMaterial() {
+    if (!matSelecionado) return
+    const q = parseFloat(matQtd.replace(',', '.')) || 0
+    if (q <= 0) return
+    setMateriaisPendentes((l) => [
+      ...l,
+      {
+        localId: crypto.randomUUID(),
+        estoqueId: matSelecionado.id,
+        tipo: matSelecionado.tipo,
+        nome: matSelecionado.nome,
+        unidade: matSelecionado.tipo === 'lote' ? 'uso' : matSelecionado.unidade,
+        quantidade: q,
+        tamanhoLote: matSelecionado.tamanho_lote,
+        fecharLote: matSelecionado.tipo === 'lote' ? matFecharLote : false,
+      },
+    ])
+    setMatSelId('')
+    setMatQtd('1')
+    setMatFecharLote(false)
+  }
+
+  function removerMaterialPendente(localId: string) {
+    setMateriaisPendentes((l) => l.filter((m) => m.localId !== localId))
+  }
 
   function adicionarAchado() {
     if (!regiaoNova.trim() || !achadoNovo.trim()) return
@@ -241,6 +307,22 @@ export function AtendimentoFormPage() {
         }
       }
 
+      // Grava os materiais usados (baixa o estoque / conta usos no lote).
+      if (atendimentoId) {
+        for (const m of materiaisPendentes) {
+          await registrarMaterial.mutateAsync({
+            atendimentoId,
+            estoqueId: m.estoqueId,
+            tipo: m.tipo,
+            nome: m.nome,
+            unidade: m.unidade,
+            quantidade: m.quantidade,
+            tamanhoLote: m.tamanhoLote,
+            fecharLote: m.fecharLote,
+          })
+        }
+      }
+
       // 4) Agenda o retorno (cria a próxima consulta), se marcado.
       if (!editando && agendarRetorno && dataRetorno) {
         const ini = combinarDataHora(dataRetorno, horaRetorno)
@@ -266,6 +348,10 @@ export function AtendimentoFormPage() {
 
   async function aoExcluir() {
     if (!confirm('Excluir este atendimento?')) return
+    // Devolve ao estoque os materiais que tinham sido usados.
+    for (const m of materiais ?? []) {
+      await excluirMaterial.mutateAsync(m)
+    }
     await excluir.mutateAsync(atId!)
     navigate(`/pacientes/${id}`, { replace: true })
   }
@@ -466,6 +552,80 @@ export function AtendimentoFormPage() {
               aoRemover={removerMapaPendente}
             />
           ))}
+        </div>
+
+        {/* Materiais usados — baixam do estoque ao salvar. */}
+        <div>
+          <p className="mb-1 font-bold text-slate-700 dark:text-slate-200">Materiais usados</p>
+          <div className="flex flex-col gap-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3">
+            {(estoque ?? []).length === 0 ? (
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                Nenhum material no estoque ainda. Cadastre em Mais → Estoque pra
+                escolher aqui.
+              </p>
+            ) : (
+              <>
+                <select
+                  value={matSelId}
+                  onChange={(e) => setMatSelId(e.target.value)}
+                  className={inputClass}
+                >
+                  <option value="">Escolha um material…</option>
+                  {(estoque ?? []).map((e) => (
+                    <option key={e.id} value={e.id}>
+                      {e.tipo === 'lote'
+                        ? `${e.nome} (por lote)`
+                        : `${e.nome} (${formatQtd(e.quantidade)} ${e.unidade})`}
+                    </option>
+                  ))}
+                </select>
+                <div className="flex items-end gap-3">
+                  <div className="flex-1">
+                    <Campo rotulo={matEhLote ? 'Usos neste atendimento' : 'Quantidade'}>
+                      <input
+                        inputMode="decimal"
+                        value={matQtd}
+                        onChange={(e) => setMatQtd(e.target.value)}
+                        className={inputClass}
+                      />
+                    </Campo>
+                  </div>
+                  <span className="min-h-[48px] shrink-0 self-end pb-3 text-slate-500 dark:text-slate-400">
+                    {matEhLote ? 'uso(s)' : matSelecionado?.unidade ?? ''}
+                  </span>
+                </div>
+                {matEhLote && (
+                  <label className="flex items-center gap-2 text-sm font-bold text-slate-700 dark:text-slate-200">
+                    <input
+                      type="checkbox"
+                      checked={matFecharLote}
+                      onChange={(e) => setMatFecharLote(e.target.checked)}
+                      className="h-5 w-5 accent-brand-600"
+                    />
+                    🔴 Esse frasco acabou agora
+                  </label>
+                )}
+                <button
+                  type="button"
+                  onClick={adicionarMaterial}
+                  disabled={!matSelId}
+                  className="min-h-[44px] rounded-lg border-2 border-dashed border-brand-400 px-4 font-bold text-brand-700 disabled:opacity-40"
+                >
+                  + Adicionar material
+                </button>
+              </>
+            )}
+          </div>
+
+          <MateriaisLista
+            pendentes={materiaisPendentes}
+            salvos={materiais ?? []}
+            aoRemoverPendente={removerMaterialPendente}
+            aoExcluirSalvo={(m) => {
+              if (confirm(`Remover "${m.nome}" e devolver ao estoque?`))
+                excluirMaterial.mutate(m)
+            }}
+          />
         </div>
 
         {/* Pagamento — registrado junto ao salvar o atendimento. */}
@@ -697,6 +857,64 @@ function MapaGrupo({
         ))}
       </ul>
     </div>
+  )
+}
+
+function MateriaisLista({
+  pendentes,
+  salvos,
+  aoRemoverPendente,
+  aoExcluirSalvo,
+}: {
+  pendentes: MaterialPendente[]
+  salvos: MaterialUsado[]
+  aoRemoverPendente: (localId: string) => void
+  aoExcluirSalvo: (m: MaterialUsado) => void
+}) {
+  if (pendentes.length === 0 && salvos.length === 0) return null
+  return (
+    <ul className="mt-3 flex flex-col gap-2">
+      {salvos.map((m) => (
+        <li
+          key={m.id}
+          className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-2"
+        >
+          <span className="min-w-0 text-sm">
+            <b className="text-slate-800 dark:text-slate-100">{m.nome}</b> —{' '}
+            {formatQtd(m.quantidade)} {m.unidade}
+          </span>
+          <button
+            type="button"
+            onClick={() => aoExcluirSalvo(m)}
+            aria-label="Remover material"
+            className="shrink-0 text-red-600"
+          >
+            ×
+          </button>
+        </li>
+      ))}
+      {pendentes.map((m) => (
+        <li
+          key={m.localId}
+          className="flex items-center justify-between gap-2 rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-950/40 p-2"
+        >
+          <span className="min-w-0 text-sm">
+            <b className="text-slate-800 dark:text-slate-100">{m.nome}</b> —{' '}
+            {formatQtd(m.quantidade)} {m.unidade}
+            {m.fecharLote ? ' · frasco acabou' : ''}{' '}
+            <span className="text-xs text-amber-600">a salvar</span>
+          </span>
+          <button
+            type="button"
+            onClick={() => aoRemoverPendente(m.localId)}
+            aria-label="Remover material"
+            className="shrink-0 text-red-600"
+          >
+            ×
+          </button>
+        </li>
+      ))}
+    </ul>
   )
 }
 

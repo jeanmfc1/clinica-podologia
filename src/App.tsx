@@ -18,6 +18,8 @@ import { AnamneseFormPage } from './pages/AnamneseFormPage'
 import { AgendarPublicoPage } from './pages/AgendarPublicoPage'
 import { FinanceiroPage } from './pages/FinanceiroPage'
 import { PagamentoFormPage } from './pages/PagamentoFormPage'
+import { EstoquePage } from './pages/EstoquePage'
+import { EstoqueFormPage } from './pages/EstoqueFormPage'
 import { InicioPage } from './pages/InicioPage'
 
 export default function App() {
@@ -57,6 +59,9 @@ export default function App() {
               <Route path="/procedimentos" element={<ProcedimentosPage />} />
               <Route path="/procedimentos/novo" element={<ProcedimentoFormPage />} />
               <Route path="/procedimentos/:id" element={<ProcedimentoFormPage />} />
+              <Route path="/estoque" element={<EstoquePage />} />
+              <Route path="/estoque/novo" element={<EstoqueFormPage />} />
+              <Route path="/estoque/:id" element={<EstoqueFormPage />} />
               <Route path="/google" element={<GoogleAgendaPage />} />
               <Route path="/mais" element={<MaisPage />} />
             </Route>
