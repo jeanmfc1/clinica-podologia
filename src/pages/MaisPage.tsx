@@ -18,7 +18,7 @@ export function MaisPage() {
     { rotulo: 'Google Agenda', para: '/google' },
     { rotulo: 'Estoque', para: '/estoque' },
     { rotulo: 'Termos e consentimento' },
-    { rotulo: 'Relatórios' },
+    { rotulo: 'Relatórios', para: '/relatorios' },
     { rotulo: 'Configurações da clínica' },
   ]
 
