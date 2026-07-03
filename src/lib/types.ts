@@ -182,3 +182,29 @@ export type Anamnese = {
   respostas_json: Record<string, unknown>
   atualizado_em: string
 }
+
+// ----- Estoque -----
+
+// Item de estoque (material): quantidade atual e mínimo pra avisar.
+export type ItemEstoque = {
+  id: string
+  clinica_id: string
+  nome: string
+  categoria: string | null
+  unidade: string
+  quantidade: number
+  minimo: number
+  observacao: string | null
+  created_at: string
+  updated_at: string
+}
+
+// clinica_id é preenchido automaticamente pelo banco.
+export type ItemEstoqueInput = {
+  nome: string
+  categoria?: string | null
+  unidade?: string
+  quantidade?: number
+  minimo?: number
+  observacao?: string | null
+}

@@ -16,7 +16,7 @@ export function MaisPage() {
   const itens: { rotulo: string; para?: string }[] = [
     { rotulo: 'Procedimentos', para: '/procedimentos' },
     { rotulo: 'Google Agenda', para: '/google' },
-    { rotulo: 'Estoque' },
+    { rotulo: 'Estoque', para: '/estoque' },
     { rotulo: 'Termos e consentimento' },
     { rotulo: 'Relatórios' },
     { rotulo: 'Configurações da clínica' },
