@@ -24,11 +24,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [carregando, setCarregando] = useState(true)
 
   useEffect(() => {
-    // Recupera a sessão salva ao abrir o app.
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session)
-      setCarregando(false)
-    })
+    // Recupera a sessão salva ao abrir o app. Se falhar, segue pro login em vez
+    // de travar na tela "Carregando".
+    supabase.auth
+      .getSession()
+      .then(({ data }) => setSession(data.session))
+      .catch(() => {})
+      .finally(() => setCarregando(false))
 
     // Mantém a sessão sincronizada (login, logout, refresh de token).
     const { data: sub } = supabase.auth.onAuthStateChange((_evento, novaSessao) => {

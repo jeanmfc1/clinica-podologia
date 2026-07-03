@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import { supabaseConfigurado } from '../lib/supabase'
 import { clinica } from '../config'
+import { APP_VERSION } from '../lib/version'
 
 export function LoginPage() {
   const { entrar } = useAuth()
@@ -104,6 +105,11 @@ export function LoginPage() {
           {enviando ? 'Entrando…' : 'Entrar'}
         </button>
       </form>
+
+      {/* Versão — pra conferir se o app está rodando a build mais nova. */}
+      <p className="mt-8 text-center text-xs text-slate-400 dark:text-slate-500">
+        versão {APP_VERSION}
+      </p>
     </div>
   )
 }
