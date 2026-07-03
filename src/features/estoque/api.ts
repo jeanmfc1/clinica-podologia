@@ -121,7 +121,19 @@ export function useSeedEstoque() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: async (lista: ItemEstoqueInput[]) => {
-      const { data, error } = await supabase.from('estoque').insert(lista).select()
+      // Normaliza todos pro MESMO conjunto de campos — senão o Supabase recusa
+      // a inserção em lote ("All object keys must match").
+      const linhas = lista.map((i) => ({
+        nome: i.nome,
+        categoria: i.categoria ?? null,
+        tipo: i.tipo ?? 'unidade',
+        unidade: i.unidade ?? 'un',
+        tamanho_lote: i.tamanho_lote ?? null,
+        quantidade: i.quantidade ?? 0,
+        minimo: i.minimo ?? 0,
+        observacao: i.observacao ?? null,
+      }))
+      const { data, error } = await supabase.from('estoque').insert(linhas).select()
       if (error) throw error
       const criados = (data ?? []) as ItemEstoque[]
       const lotes = criados

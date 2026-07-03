@@ -27,8 +27,9 @@ export function EstoquePage() {
     setErroSeed(null)
     try {
       await seed.mutateAsync(INVENTARIO_INICIAL)
-    } catch {
-      setErroSeed('Não foi possível carregar o inventário. Tente de novo.')
+    } catch (e) {
+      const motivo = e instanceof Error ? e.message : String(e)
+      setErroSeed('Não foi possível carregar o inventário. ' + motivo)
     }
   }
 
