@@ -13,8 +13,11 @@ export const INVENTARIO_INICIAL: ItemEstoqueInput[] = [
   { nome: 'Creme fármaco (curativo)', categoria: 'Curativos', tipo: 'lote', unidade: 'g', tamanho_lote: 30, quantidade: 0, minimo: 0 },
   { nome: 'Free Calos (amaciante/cutícula)', categoria: 'Cremes e loções', tipo: 'lote', unidade: 'ml', tamanho_lote: 500, quantidade: 0, minimo: 0 },
   { nome: 'Álcool 70%', categoria: 'Limpeza', tipo: 'lote', unidade: 'ml', tamanho_lote: 1000, quantidade: 0, minimo: 0 },
-  // Por UNIDADE (contáveis — baixa 1 por uso).
-  { nome: 'Kit órtese ungueal FlexNail (tiras 30 cm)', categoria: 'Órteses', unidade: 'un', quantidade: 3, minimo: 1 },
+  // Órtese FlexNail — 3 tiras por pacote (cores diferentes), usadas por cm.
+  // Cada tira tem 30 cm; no atendimento você digita quantos cm cortou.
+  { nome: 'Órtese FlexNail — tira azul (30 cm)', categoria: 'Órteses', unidade: 'cm', quantidade: 30, minimo: 5 },
+  { nome: 'Órtese FlexNail — tira amarela (30 cm)', categoria: 'Órteses', unidade: 'cm', quantidade: 30, minimo: 5 },
+  { nome: 'Órtese FlexNail — tira vermelha (30 cm)', categoria: 'Órteses', unidade: 'cm', quantidade: 30, minimo: 5 },
   { nome: 'Lixa laminar', categoria: 'Lixas', unidade: 'un', quantidade: 100, minimo: 20 },
   { nome: 'Lixa plantar', categoria: 'Lixas', unidade: 'un', quantidade: 100, minimo: 20 },
   { nome: 'Bandagem elástica 5×4,5 cm', categoria: 'Curativos', unidade: 'un', quantidade: 6, minimo: 2 },

@@ -13,7 +13,7 @@ const CHAVE_MAT = 'atendimento_materiais'
 const CHAVE_LOTES = 'estoque_lotes'
 
 // Sugestões de unidade e categoria (campos livres; isto só ajuda no formulário).
-export const UNIDADES = ['un', 'cx', 'par', 'ml', 'g', 'kg', 'm', 'rolo']
+export const UNIDADES = ['un', 'cx', 'par', 'cm', 'm', 'ml', 'g', 'kg', 'rolo']
 export const CATEGORIAS_ESTOQUE = [
   'Lâminas',
   'Cremes e loções',
