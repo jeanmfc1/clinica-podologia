@@ -41,6 +41,7 @@ export function EstoqueFormPage() {
   const [tamanhoLote, setTamanhoLote] = useState('')
   const [quantidade, setQuantidade] = useState('0')
   const [minimo, setMinimo] = useState('0')
+  const [preco, setPreco] = useState('')
   const [observacao, setObservacao] = useState('')
   const [erro, setErro] = useState<string | null>(null)
 
@@ -53,6 +54,7 @@ export function EstoqueFormPage() {
       setTamanhoLote(item.tamanho_lote != null ? String(item.tamanho_lote).replace('.', ',') : '')
       setQuantidade(String(item.quantidade).replace('.', ','))
       setMinimo(String(item.minimo).replace('.', ','))
+      setPreco(item.preco ? String(item.preco).replace('.', ',') : '')
       setObservacao(item.observacao ?? '')
     }
   }, [item])
@@ -74,6 +76,7 @@ export function EstoqueFormPage() {
       tamanho_lote: tipo === 'lote' ? paraNumero(tamanhoLote) || null : null,
       quantidade: paraNumero(quantidade),
       minimo: paraNumero(minimo),
+      preco: paraNumero(preco),
       observacao: observacao.trim() || null,
     }
     try {
@@ -209,6 +212,20 @@ export function EstoqueFormPage() {
           {ehLote
             ? 'Quando os frascos de reserva chegarem nesse número, aparece como “acabando”. Deixe 0 pra não avisar.'
             : 'Quando a quantidade ficar igual ou abaixo desse número, o material aparece como “acabando”. Deixe 0 pra não avisar.'}
+        </p>
+
+        <Campo rotulo="Preço de venda (R$)">
+          <input
+            inputMode="decimal"
+            placeholder="0,00"
+            value={preco}
+            onChange={(e) => setPreco(e.target.value)}
+            className={inputClass}
+          />
+        </Campo>
+        <p className="-mt-2 text-sm text-slate-500 dark:text-slate-400">
+          Preencha só se você <b>vende</b> este produto. Deixe 0 se for material
+          de uso.
         </p>
 
         <Campo rotulo="Observação">

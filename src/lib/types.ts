@@ -201,6 +201,7 @@ export type ItemEstoque = {
   minimo: number
   tipo: TipoEstoque
   tamanho_lote: number | null
+  preco: number
   observacao: string | null
   created_at: string
   updated_at: string
@@ -215,6 +216,7 @@ export type ItemEstoqueInput = {
   minimo?: number
   tipo?: TipoEstoque
   tamanho_lote?: number | null
+  preco?: number
   observacao?: string | null
 }
 
