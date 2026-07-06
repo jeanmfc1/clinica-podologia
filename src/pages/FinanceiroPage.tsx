@@ -68,6 +68,13 @@ export function FinanceiroPage() {
         }
       />
 
+      <Link
+        to="/vender"
+        className="mb-4 flex min-h-[48px] items-center justify-center gap-2 rounded-lg bg-green-600 px-4 font-bold text-white"
+      >
+        💰 Vender produto
+      </Link>
+
       {/* Navegação do mês */}
       <div className="mb-3 flex items-center justify-between gap-2">
         <button

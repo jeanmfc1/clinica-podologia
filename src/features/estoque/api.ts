@@ -1,10 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../../lib/supabase'
 import type {
+  FormaPagamento,
   ItemEstoque,
   ItemEstoqueInput,
   Lote,
   MaterialUsado,
+  StatusPagamento,
   TipoEstoque,
 } from '../../lib/types'
 
@@ -129,6 +131,7 @@ export function useSeedEstoque() {
         tipo: i.tipo ?? 'unidade',
         unidade: i.unidade ?? 'un',
         tamanho_lote: i.tamanho_lote ?? null,
+        preco: i.preco ?? 0,
         quantidade: i.quantidade ?? 0,
         minimo: i.minimo ?? 0,
         observacao: i.observacao ?? null,
@@ -145,6 +148,45 @@ export function useSeedEstoque() {
       }
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: [CHAVE] }),
+  })
+}
+
+// ---------- Venda de produto (baixa estoque + entra no financeiro) ----------
+export function useVenderProduto() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (args: {
+      estoqueId: string | null
+      nome: string
+      quantidade: number
+      valorUnitario: number
+      forma: FormaPagamento
+      status: StatusPagamento
+      pacienteId?: string | null
+      vencimento?: string | null
+      data?: string
+    }) => {
+      // Baixa do estoque.
+      await ajustarEstoque(args.estoqueId, -args.quantidade)
+      // Lança a entrada no financeiro.
+      const desc = args.quantidade > 1 ? `${args.nome} (${args.quantidade}x)` : args.nome
+      const { error } = await supabase.from('pagamentos').insert({
+        tipo: 'entrada',
+        categoria: 'Produto',
+        descricao: desc,
+        valor: args.valorUnitario * args.quantidade,
+        forma: args.forma,
+        status: args.status,
+        vencimento: args.status === 'pendente' ? args.vencimento || null : null,
+        paciente_id: args.pacienteId ?? null,
+        data: args.data ?? new Date().toISOString(),
+      })
+      if (error) throw error
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [CHAVE] })
+      qc.invalidateQueries({ queryKey: ['pagamentos'] })
+    },
   })
 }
 

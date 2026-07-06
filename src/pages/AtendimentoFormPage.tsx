@@ -23,6 +23,7 @@ import {
   useExcluirMaterial,
   useMateriaisDoAtendimento,
   useRegistrarMaterial,
+  useVenderProduto,
 } from '../features/estoque/api'
 import type {
   FormaPagamento,
@@ -33,6 +34,7 @@ import type {
 import {
   combinarDataHora,
   dataLocalISO,
+  formatReal,
   horaLocal,
   hojeISO,
   somarDias,
@@ -69,6 +71,15 @@ type MaterialPendente = {
   fecharLote: boolean
 }
 
+// Produto vendido no atendimento (baixa estoque + entra no financeiro ao salvar).
+type ProdutoVendido = {
+  localId: string
+  estoqueId: string
+  nome: string
+  preco: number
+  quantidade: number
+}
+
 // Mostra número inteiro quando não tem casas; senão, com vírgula.
 function formatQtd(n: number): string {
   return Number.isInteger(n) ? String(n) : n.toLocaleString('pt-BR')
@@ -102,6 +113,7 @@ export function AtendimentoFormPage() {
   const { data: materiais } = useMateriaisDoAtendimento(atId)
   const registrarMaterial = useRegistrarMaterial()
   const excluirMaterial = useExcluirMaterial()
+  const venderProduto = useVenderProduto()
 
   const agora = new Date()
   const [data, setData] = useState(hojeISO())
@@ -166,6 +178,38 @@ export function AtendimentoFormPage() {
   function removerMaterialPendente(localId: string) {
     setMateriaisPendentes((l) => l.filter((m) => m.localId !== localId))
   }
+
+  // Produtos vendidos no atendimento.
+  const produtosVenda = (estoque ?? []).filter((e) => e.preco > 0)
+  const [produtosVendidos, setProdutosVendidos] = useState<ProdutoVendido[]>([])
+  const [prodSelId, setProdSelId] = useState('')
+  const [prodQtd, setProdQtd] = useState('1')
+  const [prodForma, setProdForma] = useState<FormaPagamento>('dinheiro')
+  const [prodStatus, setProdStatus] = useState<StatusPagamento>('pago')
+  const prodSelecionado = produtosVenda.find((e) => e.id === prodSelId)
+
+  function adicionarProduto() {
+    if (!prodSelecionado) return
+    const q = parseInt(prodQtd, 10) || 0
+    if (q <= 0) return
+    setProdutosVendidos((l) => [
+      ...l,
+      {
+        localId: crypto.randomUUID(),
+        estoqueId: prodSelecionado.id,
+        nome: prodSelecionado.nome,
+        preco: prodSelecionado.preco,
+        quantidade: q,
+      },
+    ])
+    setProdSelId('')
+    setProdQtd('1')
+  }
+
+  function removerProduto(localId: string) {
+    setProdutosVendidos((l) => l.filter((p) => p.localId !== localId))
+  }
+  const totalProdutos = produtosVendidos.reduce((s, p) => s + p.preco * p.quantidade, 0)
 
   function adicionarAchado() {
     if (!regiaoNova.trim() || !achadoNovo.trim()) return
@@ -321,6 +365,20 @@ export function AtendimentoFormPage() {
             fecharLote: m.fecharLote,
           })
         }
+      }
+
+      // Vende os produtos escolhidos (baixa estoque + entra no financeiro).
+      for (const p of produtosVendidos) {
+        await venderProduto.mutateAsync({
+          estoqueId: p.estoqueId,
+          nome: p.nome,
+          quantidade: p.quantidade,
+          valorUnitario: p.preco,
+          forma: prodForma,
+          status: prodStatus,
+          pacienteId: id,
+          data: dataHora,
+        })
       }
 
       // 4) Agenda o retorno (cria a próxima consulta), se marcado.
@@ -627,6 +685,103 @@ export function AtendimentoFormPage() {
             }}
           />
         </div>
+
+        {/* Produtos vendidos — baixam estoque e entram no financeiro ao salvar. */}
+        {produtosVenda.length > 0 && (
+          <div>
+            <p className="mb-1 font-bold text-slate-700 dark:text-slate-200">Produtos vendidos</p>
+            <div className="flex flex-col gap-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3">
+              <select
+                value={prodSelId}
+                onChange={(e) => setProdSelId(e.target.value)}
+                className={inputClass}
+              >
+                <option value="">Escolha um produto…</option>
+                {produtosVenda.map((e) => (
+                  <option key={e.id} value={e.id}>
+                    {e.nome} — {formatReal(e.preco)} ({formatQtd(e.quantidade)} em estoque)
+                  </option>
+                ))}
+              </select>
+              <div className="flex items-end gap-3">
+                <div className="w-28">
+                  <Campo rotulo="Qtd">
+                    <input
+                      type="number"
+                      inputMode="numeric"
+                      min={1}
+                      value={prodQtd}
+                      onChange={(e) => setProdQtd(e.target.value)}
+                      className={inputClass}
+                    />
+                  </Campo>
+                </div>
+                <button
+                  type="button"
+                  onClick={adicionarProduto}
+                  disabled={!prodSelId}
+                  className="min-h-[48px] flex-1 rounded-lg border-2 border-dashed border-green-500 px-4 font-bold text-green-700 disabled:opacity-40"
+                >
+                  + Adicionar
+                </button>
+              </div>
+
+              {produtosVendidos.length > 0 && (
+                <>
+                  <div className="grid grid-cols-2 gap-1 rounded-lg bg-slate-100 dark:bg-slate-700 p-1">
+                    <select
+                      value={prodForma}
+                      onChange={(e) => setProdForma(e.target.value as FormaPagamento)}
+                      className={inputClass}
+                    >
+                      {FORMAS.map((f) => (
+                        <option key={f.valor} value={f.valor}>
+                          {f.rotulo}
+                        </option>
+                      ))}
+                    </select>
+                    <select
+                      value={prodStatus}
+                      onChange={(e) => setProdStatus(e.target.value as StatusPagamento)}
+                      className={inputClass}
+                    >
+                      <option value="pago">Recebido</option>
+                      <option value="pendente">Fiado</option>
+                    </select>
+                  </div>
+                  <p className="text-right font-bold text-green-700">
+                    Total: {formatReal(totalProdutos)}
+                  </p>
+                </>
+              )}
+            </div>
+
+            {produtosVendidos.length > 0 && (
+              <ul className="mt-3 flex flex-col gap-2">
+                {produtosVendidos.map((p) => (
+                  <li
+                    key={p.localId}
+                    className="flex items-center justify-between gap-2 rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-950/40 p-2"
+                  >
+                    <span className="min-w-0 text-sm">
+                      <b className="text-slate-800 dark:text-slate-100">{p.nome}</b> —{' '}
+                      {p.quantidade}× {formatReal(p.preco)} = {formatReal(p.preco * p.quantidade)}{' '}
+                      <span className="text-xs text-amber-600">a salvar</span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => removerProduto(p.localId)}
+                      aria-label="Remover produto"
+                      className="shrink-0 text-red-600"
+                    >
+                      ×
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
 
         {/* Pagamento — registrado junto ao salvar o atendimento. */}
         {!editando && (

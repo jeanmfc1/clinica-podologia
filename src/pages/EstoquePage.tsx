@@ -8,7 +8,9 @@ import {
   useSeedEstoque,
 } from '../features/estoque/api'
 import { INVENTARIO_INICIAL } from '../features/estoque/inventarioInicial'
+import { PRODUTOS_INICIAIS } from '../features/estoque/produtosIniciais'
 import type { ItemEstoque, Lote } from '../lib/types'
+import { formatReal } from '../lib/format'
 import { Aviso, PageHeader } from '../components/ui'
 
 // Mostra número inteiro quando não tem casas; senão, com vírgula.
@@ -23,6 +25,9 @@ export function EstoquePage() {
   const [erroSeed, setErroSeed] = useState<string | null>(null)
   const faltando = (lista ?? []).filter(estaFaltando)
 
+  // Já tem produtos de venda cadastrados? (esconde o botão de adicionar depois.)
+  const temProdutos = (lista ?? []).some((i) => i.preco > 0)
+
   async function carregarInventario() {
     setErroSeed(null)
     try {
@@ -30,6 +35,16 @@ export function EstoquePage() {
     } catch (e) {
       const motivo = e instanceof Error ? e.message : String(e)
       setErroSeed('Não foi possível carregar o inventário. ' + motivo)
+    }
+  }
+
+  async function adicionarProdutos() {
+    setErroSeed(null)
+    try {
+      await seed.mutateAsync(PRODUTOS_INICIAIS)
+    } catch (e) {
+      const motivo = e instanceof Error ? e.message : String(e)
+      setErroSeed('Não foi possível adicionar os produtos. ' + motivo)
     }
   }
 
@@ -70,6 +85,35 @@ export function EstoquePage() {
             Cadastra seus materiais com as quantidades atuais. Você pode editar
             tudo depois (inclusive o mínimo pra avisar).
           </p>
+          {erroSeed && (
+            <p role="alert" className="text-center font-bold text-red-700">
+              {erroSeed}
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Ações de produtos (venda). */}
+      {lista && lista.length > 0 && (
+        <div className="mb-4 flex flex-col gap-2">
+          {temProdutos ? (
+            <Link
+              to="/vender"
+              className="flex min-h-[48px] items-center justify-center gap-2 rounded-lg bg-green-600 px-4 font-bold text-white"
+            >
+              💰 Vender produto
+            </Link>
+          ) : (
+            <button
+              onClick={adicionarProdutos}
+              disabled={seed.isPending}
+              className="min-h-[44px] rounded-lg border-2 border-brand-400 px-4 font-bold text-brand-700 disabled:opacity-60"
+            >
+              {seed.isPending
+                ? 'Adicionando…'
+                : `+ Adicionar produtos de venda (${PRODUTOS_INICIAIS.length})`}
+            </button>
+          )}
           {erroSeed && (
             <p role="alert" className="text-center font-bold text-red-700">
               {erroSeed}
@@ -126,12 +170,14 @@ function ItemLinha({
   }
 
   // Subtítulo: itens de lote mostram o frasco aberto e a reserva.
-  const subtitulo = ehLote
-    ? (lote
-        ? `frasco aberto: ${formatQtd(lote.usos)} uso${lote.usos === 1 ? '' : 's'}`
-        : 'sem frasco aberto') +
-      ` · reserva: ${formatQtd(item.quantidade)}`
-    : `${formatQtd(item.quantidade)} ${item.unidade}`
+  const precoTxt = item.preco > 0 ? ` · ${formatReal(item.preco)}` : ''
+  const subtitulo =
+    (ehLote
+      ? (lote
+          ? `frasco aberto: ${formatQtd(lote.usos)} uso${lote.usos === 1 ? '' : 's'}`
+          : 'sem frasco aberto') +
+        ` · reserva: ${formatQtd(item.quantidade)}`
+      : `${formatQtd(item.quantidade)} ${item.unidade}`) + precoTxt
 
   return (
     <div

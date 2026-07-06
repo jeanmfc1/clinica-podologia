@@ -17,6 +17,7 @@ create table if not exists public.estoque (
   -- 'lote'    = liquido/creme: conta usos por frasco aberto (ver estoque_lotes).
   tipo         text not null default 'unidade',
   tamanho_lote numeric(10,2),                      -- tamanho de cada frasco (ml/g), pra media por uso
+  preco        numeric(10,2) not null default 0,   -- preco de VENDA (0 = nao vende, so material)
   observacao   text,
   created_at   timestamptz not null default now(),
   updated_at   timestamptz not null default now()
@@ -25,6 +26,7 @@ create table if not exists public.estoque (
 -- Colunas novas (caso a tabela já existisse de uma versão anterior).
 alter table public.estoque add column if not exists tipo text not null default 'unidade';
 alter table public.estoque add column if not exists tamanho_lote numeric(10,2);
+alter table public.estoque add column if not exists preco numeric(10,2) not null default 0;
 do $$ begin
   if not exists (select 1 from pg_constraint where conname = 'estoque_tipo_chk') then
     alter table public.estoque add constraint estoque_tipo_chk check (tipo in ('unidade','lote'));

@@ -21,6 +21,7 @@ import { PagamentoFormPage } from './pages/PagamentoFormPage'
 import { EstoquePage } from './pages/EstoquePage'
 import { EstoqueFormPage } from './pages/EstoqueFormPage'
 import { RelatoriosPage } from './pages/RelatoriosPage'
+import { VenderProdutoPage } from './pages/VenderProdutoPage'
 import { InicioPage } from './pages/InicioPage'
 
 export default function App() {
@@ -64,6 +65,7 @@ export default function App() {
               <Route path="/estoque/novo" element={<EstoqueFormPage />} />
               <Route path="/estoque/:id" element={<EstoqueFormPage />} />
               <Route path="/relatorios" element={<RelatoriosPage />} />
+              <Route path="/vender" element={<VenderProdutoPage />} />
               <Route path="/google" element={<GoogleAgendaPage />} />
               <Route path="/mais" element={<MaisPage />} />
             </Route>
