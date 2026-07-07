@@ -274,6 +274,12 @@ export function AtendimentoFormPage() {
     }
   }, [agendamento])
 
+  // Valor de tabela do procedimento x valor cobrado de verdade → desconto.
+  const valorTabela = agendamento?.procedimento?.preco ?? null
+  const valorCobrado = parseFloat(valorPag.replace(/\./g, '').replace(',', '.')) || 0
+  const desconto = valorTabela != null ? valorTabela - valorCobrado : 0
+  const descontoPct = valorTabela && valorTabela > 0 ? (desconto / valorTabela) * 100 : 0
+
   async function aoEnviar(e: FormEvent) {
     e.preventDefault()
     setErro(null)
@@ -323,6 +329,12 @@ export function AtendimentoFormPage() {
       if (!editando && registrarPag) {
         const v = parseFloat(valorPag.replace(/\./g, '').replace(',', '.'))
         if (!isNaN(v) && v > 0) {
+          // Guarda a tabela e o desconto na descrição, pra ficar no histórico.
+          const nomeProc = agendamento?.procedimento?.nome ?? null
+          const temDesc = valorTabela != null && valorTabela - v > 0.001
+          const descricao = temDesc
+            ? `${nomeProc ?? 'Consulta'} — tabela ${formatReal(valorTabela!)}, desconto ${formatReal(valorTabela! - v)}`
+            : nomeProc
           await criarPagamento.mutateAsync({
             tipo: 'entrada',
             valor: v,
@@ -333,7 +345,7 @@ export function AtendimentoFormPage() {
             data: dataHora,
             paciente_id: id,
             agendamento_id: agendamentoId,
-            descricao: agendamento?.procedimento?.nome ?? null,
+            descricao,
           })
         }
       }
@@ -798,7 +810,7 @@ export function AtendimentoFormPage() {
 
             {registrarPag && (
               <div className="mt-3 flex flex-col gap-3">
-                <Campo rotulo="Valor (R$)">
+                <Campo rotulo="Valor cobrado (R$)">
                   <input
                     inputMode="decimal"
                     value={valorPag}
@@ -807,6 +819,23 @@ export function AtendimentoFormPage() {
                     className={inputClass}
                   />
                 </Campo>
+                {valorTabela != null && valorTabela > 0 && (
+                  <p className="-mt-1 text-sm">
+                    <span className="text-slate-500 dark:text-slate-400">
+                      Tabela: {formatReal(valorTabela)}
+                    </span>
+                    {desconto > 0.001 && (
+                      <span className="font-bold text-amber-600">
+                        {' '}· desconto {formatReal(desconto)} ({descontoPct.toFixed(0)}%)
+                      </span>
+                    )}
+                    {desconto < -0.001 && (
+                      <span className="font-bold text-green-700">
+                        {' '}· acréscimo {formatReal(-desconto)}
+                      </span>
+                    )}
+                  </p>
+                )}
                 <Campo rotulo="Forma">
                   <select
                     value={formaPag}
