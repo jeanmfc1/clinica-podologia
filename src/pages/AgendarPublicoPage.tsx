@@ -21,7 +21,6 @@ import { TelefoneInput } from '../components/TelefoneInput'
 export function AgendarPublicoPage() {
   const [procedimentos, setProcedimentos] = useState<ProcedimentoPublico[]>([])
   const [itens, setItens] = useState<ProcedimentoPublico[]>([])
-  const [selId, setSelId] = useState('')
   const [data, setData] = useState('')
   const [slots, setSlots] = useState<string[]>([])
   const [slot, setSlot] = useState('')
@@ -42,12 +41,6 @@ export function AgendarPublicoPage() {
   const duracao = itens.reduce((s, i) => s + i.duracao_min, 0)
   const precoTotal = itens.reduce((s, i) => s + i.preco, 0)
 
-  function adicionarServico() {
-    const p = procedimentos.find((x) => x.id === selId)
-    if (!p) return
-    setItens((l) => [...l, p])
-    setSelId('')
-  }
   function removerServico(i: number) {
     setItens((l) => l.filter((_, idx) => idx !== i))
   }
@@ -153,28 +146,25 @@ export function AgendarPublicoPage() {
       <form onSubmit={aoEnviar} className="flex flex-col gap-6">
         {/* 1. Serviços (pode escolher mais de um) */}
         <Secao numero={1} titulo="Escolha o serviço">
-          <div className="flex items-end gap-2">
-            <select
-              value={selId}
-              onChange={(e) => setSelId(e.target.value)}
-              className={inputClass}
-            >
-              <option value="">Adicionar serviço…</option>
-              {procedimentos.map((p) => (
+          <select
+            value=""
+            onChange={(e) => {
+              const p = procedimentos.find((x) => x.id === e.target.value)
+              if (p) setItens((l) => [...l, p])
+            }}
+            className={inputClass}
+          >
+            <option value="">
+              {itens.length ? 'Adicionar outro serviço…' : 'Escolha um serviço…'}
+            </option>
+            {procedimentos
+              .filter((p) => !itens.some((i) => i.id === p.id))
+              .map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.nome} · {p.duracao_min} min · {formatReal(p.preco)}
                 </option>
               ))}
-            </select>
-            <button
-              type="button"
-              onClick={adicionarServico}
-              disabled={!selId}
-              className="min-h-[48px] shrink-0 rounded-lg border-2 border-brand-600 px-4 font-bold text-brand-700 disabled:opacity-40"
-            >
-              + Add
-            </button>
-          </div>
+          </select>
           {procedimentos.length === 0 && !erro && (
             <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
               Nenhum serviço disponível no momento.
