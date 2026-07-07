@@ -67,10 +67,20 @@ export type Agendamento = {
   updated_at: string
 }
 
-// Agendamento com nome do paciente e do procedimento (via join).
+// Item da consulta: um procedimento (uma consulta pode ter vários).
+export type ItemConsulta = {
+  procedimento_id: string | null
+  nome: string
+  preco: number
+  duracao_min: number
+}
+
+// Agendamento com nome do paciente e dos procedimentos (via join).
+// `procedimento` = o principal (compatibilidade); `itens` = todos.
 export type AgendamentoComNomes = Agendamento & {
   paciente: { nome: string; telefone: string | null } | null
   procedimento: { nome: string; preco: number } | null
+  itens: ItemConsulta[] | null
 }
 
 export type AgendamentoInput = {

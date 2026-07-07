@@ -335,6 +335,7 @@ export default {
 
       const body = (await request.json().catch(() => ({}))) as {
         procedimento_id?: string
+        procedimento_ids?: string[]
         inicio?: string
         fim?: string
         paciente?: {
@@ -346,6 +347,14 @@ export default {
         }
         anamnese?: Record<string, unknown>
       }
+      // Aceita um ou vários procedimentos.
+      const procIds = (
+        body.procedimento_ids?.length
+          ? body.procedimento_ids
+          : body.procedimento_id
+            ? [body.procedimento_id]
+            : []
+      ).filter(Boolean)
 
       const nome = (body.paciente?.nome || '').trim()
       const telefone = soDigitos(body.paciente?.telefone || '')
@@ -381,13 +390,13 @@ export default {
       if (!pacienteId) return json({ erro: 'Falha ao identificar o paciente.' }, 500)
 
       // Cria a consulta como "a confirmar" (status agendado), marcada como online.
-      const ag = await sb(env, 'agendamentos', {
+      const ag = await sb(env, 'agendamentos?select=id', {
         method: 'POST',
-        headers: { Prefer: 'return=minimal' },
+        headers: { Prefer: 'return=representation' },
         body: JSON.stringify({
           clinica_id: clinicaId,
           paciente_id: pacienteId,
-          procedimento_id: body.procedimento_id || null,
+          procedimento_id: procIds[0] || null,
           profissional_id: profId,
           inicio: body.inicio,
           fim: body.fim,
@@ -399,6 +408,41 @@ export default {
       if (!ag.ok) {
         console.log('agendar: erro criar consulta', ag.status, await ag.text())
         return json({ erro: 'Não foi possível registrar o pedido.' }, 500)
+      }
+      const agId = ((await ag.json()) as { id: string }[])[0]?.id ?? null
+
+      // Registra todos os procedimentos escolhidos (com nome/preço/duração).
+      if (agId && procIds.length > 0) {
+        const lista = `(${procIds.join(',')})`
+        const pr = await sb(
+          env,
+          `procedimentos?clinica_id=eq.${clinicaId}&id=in.${lista}&select=id,nome,preco,duracao_min`,
+        )
+        const procs = (await pr.json()) as {
+          id: string
+          nome: string
+          preco: number
+          duracao_min: number
+        }[]
+        const porId = new Map(procs.map((x) => [x.id, x]))
+        const linhas = procIds
+          .map((pid) => porId.get(pid))
+          .filter(Boolean)
+          .map((x) => ({
+            clinica_id: clinicaId,
+            agendamento_id: agId,
+            procedimento_id: x!.id,
+            nome: x!.nome,
+            preco: x!.preco,
+            duracao_min: x!.duracao_min,
+          }))
+        if (linhas.length > 0) {
+          await sb(env, 'agendamento_procedimentos', {
+            method: 'POST',
+            headers: { Prefer: 'return=minimal' },
+            body: JSON.stringify(linhas),
+          })
+        }
       }
 
       // Salva a anamnese (uma por paciente).

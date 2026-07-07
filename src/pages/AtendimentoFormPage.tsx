@@ -267,15 +267,25 @@ export function AtendimentoFormPage() {
     }
   }, [atendimento])
 
-  // Puxa o valor do procedimento da consulta pro pagamento.
-  useEffect(() => {
-    if (agendamento?.procedimento?.preco != null) {
-      setValorPag(String(agendamento.procedimento.preco).replace('.', ','))
-    }
-  }, [agendamento])
+  // Valor de tabela = soma dos procedimentos da consulta (ou o único, se antiga).
+  const itensConsulta = agendamento?.itens ?? []
+  const nomesProc =
+    itensConsulta.length > 0
+      ? itensConsulta.map((i) => i.nome).join(' + ')
+      : (agendamento?.procedimento?.nome ?? null)
+  const valorTabela =
+    itensConsulta.length > 0
+      ? itensConsulta.reduce((s, i) => s + Number(i.preco), 0)
+      : (agendamento?.procedimento?.preco ?? null)
 
-  // Valor de tabela do procedimento x valor cobrado de verdade → desconto.
-  const valorTabela = agendamento?.procedimento?.preco ?? null
+  // Puxa o valor de tabela pro pagamento.
+  useEffect(() => {
+    if (valorTabela != null) {
+      setValorPag(String(valorTabela).replace('.', ','))
+    }
+  }, [valorTabela])
+
+  // Valor cobrado de verdade → desconto sobre a tabela.
   const valorCobrado = parseFloat(valorPag.replace(/\./g, '').replace(',', '.')) || 0
   const desconto = valorTabela != null ? valorTabela - valorCobrado : 0
   const descontoPct = valorTabela && valorTabela > 0 ? (desconto / valorTabela) * 100 : 0
@@ -330,11 +340,10 @@ export function AtendimentoFormPage() {
         const v = parseFloat(valorPag.replace(/\./g, '').replace(',', '.'))
         if (!isNaN(v) && v > 0) {
           // Guarda a tabela e o desconto na descrição, pra ficar no histórico.
-          const nomeProc = agendamento?.procedimento?.nome ?? null
           const temDesc = valorTabela != null && valorTabela - v > 0.001
           const descricao = temDesc
-            ? `${nomeProc ?? 'Consulta'} — tabela ${formatReal(valorTabela!)}, desconto ${formatReal(valorTabela! - v)}`
-            : nomeProc
+            ? `${nomesProc ?? 'Consulta'} — tabela ${formatReal(valorTabela!)}, desconto ${formatReal(valorTabela! - v)}`
+            : nomesProc
           await criarPagamento.mutateAsync({
             tipo: 'entrada',
             valor: v,
@@ -438,10 +447,10 @@ export function AtendimentoFormPage() {
           Paciente: <span className="font-bold text-slate-800 dark:text-slate-100">{paciente.nome}</span>
         </p>
       )}
-      {agendamento?.procedimento && (
+      {nomesProc && (
         <p className="mb-4 text-slate-600 dark:text-slate-300">
-          Procedimento:{' '}
-          <span className="font-bold text-slate-800 dark:text-slate-100">{agendamento.procedimento.nome}</span>
+          {itensConsulta.length > 1 ? 'Procedimentos: ' : 'Procedimento: '}
+          <span className="font-bold text-slate-800 dark:text-slate-100">{nomesProc}</span>
         </p>
       )}
 

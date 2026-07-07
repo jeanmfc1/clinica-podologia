@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { clinica } from '../config'
 import { combinarDataHora, formatReal } from '../lib/format'
 import {
@@ -20,7 +20,8 @@ import { TelefoneInput } from '../components/TelefoneInput'
 
 export function AgendarPublicoPage() {
   const [procedimentos, setProcedimentos] = useState<ProcedimentoPublico[]>([])
-  const [procId, setProcId] = useState('')
+  const [itens, setItens] = useState<ProcedimentoPublico[]>([])
+  const [selId, setSelId] = useState('')
   const [data, setData] = useState('')
   const [slots, setSlots] = useState<string[]>([])
   const [slot, setSlot] = useState('')
@@ -38,8 +39,18 @@ export function AgendarPublicoPage() {
   const [erro, setErro] = useState<string | null>(null)
   const [sucesso, setSucesso] = useState(false)
 
-  const proc = useMemo(() => procedimentos.find((p) => p.id === procId), [procedimentos, procId])
-  const duracao = proc?.duracao_min ?? 0
+  const duracao = itens.reduce((s, i) => s + i.duracao_min, 0)
+  const precoTotal = itens.reduce((s, i) => s + i.preco, 0)
+
+  function adicionarServico() {
+    const p = procedimentos.find((x) => x.id === selId)
+    if (!p) return
+    setItens((l) => [...l, p])
+    setSelId('')
+  }
+  function removerServico(i: number) {
+    setItens((l) => l.filter((_, idx) => idx !== i))
+  }
 
   useEffect(() => {
     buscarProcedimentos()
@@ -50,7 +61,7 @@ export function AgendarPublicoPage() {
   // Quando muda serviço ou dia, recalcula os horários livres.
   useEffect(() => {
     setSlot('')
-    if (!procId || !data || !duracao) {
+    if (itens.length === 0 || !data || !duracao) {
       setSlots([])
       return
     }
@@ -67,7 +78,8 @@ export function AgendarPublicoPage() {
       .then((ocupados) => setSlots(filtrarLivres(data, candidatos, duracao, ocupados)))
       .catch(() => setSlots(candidatos))
       .finally(() => setCarregandoSlots(false))
-  }, [procId, data, duracao])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [itens.length, data, duracao])
 
   function setSimNao(chave: string, v: boolean) {
     setRespostas((r) => ({ ...r, [chave]: v }))
@@ -79,7 +91,7 @@ export function AgendarPublicoPage() {
   async function aoEnviar(e: FormEvent) {
     e.preventDefault()
     setErro(null)
-    if (!procId) return setErro('Escolha o serviço.')
+    if (itens.length === 0) return setErro('Escolha ao menos um serviço.')
     if (!data || !slot) return setErro('Escolha o dia e o horário.')
     if (!nome.trim()) return setErro('Informe seu nome.')
     if (!telefone.trim()) return setErro('Informe seu telefone (WhatsApp).')
@@ -94,7 +106,7 @@ export function AgendarPublicoPage() {
     setEnviando(true)
     try {
       await enviarAgendamento({
-        procedimento_id: procId,
+        procedimento_ids: itens.map((i) => i.id),
         inicio,
         fim,
         paciente: {
@@ -139,29 +151,62 @@ export function AgendarPublicoPage() {
   return (
     <Casca>
       <form onSubmit={aoEnviar} className="flex flex-col gap-6">
-        {/* 1. Serviço */}
+        {/* 1. Serviços (pode escolher mais de um) */}
         <Secao numero={1} titulo="Escolha o serviço">
-          <select
-            value={procId}
-            onChange={(e) => setProcId(e.target.value)}
-            className={inputClass}
-          >
-            <option value="">Selecione…</option>
-            {procedimentos.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.nome} · {p.duracao_min} min · {formatReal(p.preco)}
-              </option>
-            ))}
-          </select>
+          <div className="flex items-end gap-2">
+            <select
+              value={selId}
+              onChange={(e) => setSelId(e.target.value)}
+              className={inputClass}
+            >
+              <option value="">Adicionar serviço…</option>
+              {procedimentos.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.nome} · {p.duracao_min} min · {formatReal(p.preco)}
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              onClick={adicionarServico}
+              disabled={!selId}
+              className="min-h-[48px] shrink-0 rounded-lg border-2 border-brand-600 px-4 font-bold text-brand-700 disabled:opacity-40"
+            >
+              + Add
+            </button>
+          </div>
           {procedimentos.length === 0 && !erro && (
             <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
               Nenhum serviço disponível no momento.
             </p>
           )}
-          {proc && (
-            <div className="mt-2 flex items-center justify-between rounded-lg bg-brand-50 dark:bg-brand-900/40 px-4 py-3">
-              <span className="text-sm text-slate-600 dark:text-slate-300">{proc.duracao_min} min</span>
-              <span className="text-lg font-bold text-brand-800">{formatReal(proc.preco)}</span>
+          {itens.length > 0 && (
+            <div className="mt-3 flex flex-col gap-2">
+              {itens.map((it, i) => (
+                <div
+                  key={i}
+                  className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3"
+                >
+                  <span className="min-w-0 text-sm">
+                    <b className="text-slate-800 dark:text-slate-100">{it.nome}</b>{' '}
+                    <span className="text-slate-500 dark:text-slate-400">
+                      · {it.duracao_min} min · {formatReal(it.preco)}
+                    </span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => removerServico(i)}
+                    aria-label={`Remover ${it.nome}`}
+                    className="shrink-0 text-red-600"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+              <div className="flex items-center justify-between rounded-lg bg-brand-50 dark:bg-brand-900/40 px-4 py-3">
+                <span className="text-sm text-slate-600 dark:text-slate-300">{duracao} min</span>
+                <span className="text-lg font-bold text-brand-800">{formatReal(precoTotal)}</span>
+              </div>
             </div>
           )}
         </Secao>
@@ -169,7 +214,7 @@ export function AgendarPublicoPage() {
         {/* 2. Dia e horário */}
         <Secao numero={2} titulo="Escolha o dia e o horário">
           <Calendario value={data} onChange={setData} />
-          {procId && data && (
+          {itens.length > 0 && data && (
             <div className="mt-3">
               {carregandoSlots ? (
                 <p className="text-sm text-slate-500 dark:text-slate-400">Buscando horários livres…</p>

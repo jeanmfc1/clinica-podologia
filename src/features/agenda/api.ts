@@ -5,12 +5,32 @@ import type {
   Agendamento,
   AgendamentoComNomes,
   AgendamentoInput,
+  ItemConsulta,
   StatusAgendamento,
 } from '../../lib/types'
 
 const CHAVE = 'agendamentos'
 const SELECT =
-  '*, paciente:pacientes(nome,telefone), procedimento:procedimentos(nome,preco)'
+  '*, paciente:pacientes(nome,telefone), procedimento:procedimentos(nome,preco),' +
+  ' itens:agendamento_procedimentos(procedimento_id,nome,preco,duracao_min)'
+
+// Regrava os procedimentos de uma consulta (apaga os antigos e insere os novos).
+export async function salvarProcedimentosDaConsulta(
+  agendamentoId: string,
+  itens: ItemConsulta[],
+): Promise<void> {
+  await supabase.from('agendamento_procedimentos').delete().eq('agendamento_id', agendamentoId)
+  if (itens.length === 0) return
+  const linhas = itens.map((i) => ({
+    agendamento_id: agendamentoId,
+    procedimento_id: i.procedimento_id,
+    nome: i.nome,
+    preco: i.preco,
+    duracao_min: i.duracao_min,
+  }))
+  const { error } = await supabase.from('agendamento_procedimentos').insert(linhas)
+  if (error) throw error
+}
 
 // Sincroniza (best-effort) um agendamento com o Google Agenda.
 // Nunca lança erro: se o Google estiver fora, a consulta é salva normalmente.

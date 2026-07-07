@@ -35,7 +35,9 @@ export function AgendamentoItem({
           {a.paciente?.nome ?? 'Sem paciente'}
         </span>
         <span className="block truncate text-sm text-slate-500 dark:text-slate-400">
-          {a.procedimento?.nome ?? '—'}
+          {a.itens && a.itens.length > 0
+            ? a.itens[0].nome + (a.itens.length > 1 ? ` +${a.itens.length - 1}` : '')
+            : (a.procedimento?.nome ?? '—')}
         </span>
         {a.origem === 'online' && a.status === 'agendado' && (
           <span className="mt-1 inline-block rounded-full bg-blue-100 px-2 py-0.5 text-xs font-bold text-blue-700">
