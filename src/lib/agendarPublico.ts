@@ -21,7 +21,7 @@ export type PacienteForm = {
 }
 
 export type PedidoAgendamento = {
-  procedimento_id: string | null
+  procedimento_ids: string[]
   inicio: string
   fim: string
   paciente: PacienteForm

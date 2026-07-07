@@ -1,6 +1,8 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import {
+  salvarProcedimentosDaConsulta,
   useAgendamento,
   useAtualizarAgendamento,
   useCriarAgendamento,
@@ -11,10 +13,11 @@ import { usePacientes } from '../features/pacientes/api'
 import { useProcedimentos } from '../features/procedimentos/api'
 import { STATUS_INFO, STATUS_LISTA } from '../features/agenda/status'
 import { linkLembrete } from '../features/agenda/lembrete'
-import type { StatusAgendamento } from '../lib/types'
+import type { ItemConsulta, StatusAgendamento } from '../lib/types'
 import {
   combinarDataHora,
   dataLocalISO,
+  formatReal,
   horaLocal,
   hojeISO,
 } from '../lib/format'
@@ -27,6 +30,7 @@ export function AgendamentoFormPage() {
   const navigate = useNavigate()
   const [params] = useSearchParams()
 
+  const qc = useQueryClient()
   const { data: agendamento } = useAgendamento(id)
   const { data: pacientes } = usePacientes('')
   const { data: procedimentos } = useProcedimentos()
@@ -36,7 +40,8 @@ export function AgendamentoFormPage() {
   const mudarStatus = useMudarStatus()
 
   const [pacienteId, setPacienteId] = useState(params.get('paciente') || '')
-  const [procedimentoId, setProcedimentoId] = useState('')
+  const [itens, setItens] = useState<ItemConsulta[]>([])
+  const [procSelId, setProcSelId] = useState('')
   const [data, setData] = useState(params.get('dia') || hojeISO())
   const [hora, setHora] = useState('09:00')
   const [status, setStatus] = useState<StatusAgendamento>('agendado')
@@ -47,7 +52,20 @@ export function AgendamentoFormPage() {
   useEffect(() => {
     if (agendamento) {
       setPacienteId(agendamento.paciente_id ?? '')
-      setProcedimentoId(agendamento.procedimento_id ?? '')
+      // Procedimentos: usa a lista nova; se vier vazia (consulta antiga), cai
+      // no procedimento único.
+      if (agendamento.itens && agendamento.itens.length > 0) {
+        setItens(agendamento.itens)
+      } else if (agendamento.procedimento_id && agendamento.procedimento) {
+        setItens([
+          {
+            procedimento_id: agendamento.procedimento_id,
+            nome: agendamento.procedimento.nome,
+            preco: agendamento.procedimento.preco,
+            duracao_min: 30,
+          },
+        ])
+      }
       setData(dataLocalISO(agendamento.inicio))
       setHora(horaLocal(agendamento.inicio))
       setStatus(agendamento.status)
@@ -55,14 +73,22 @@ export function AgendamentoFormPage() {
     }
   }, [agendamento])
 
-  // Procedimentos ativos (sempre inclui o já escolhido, mesmo se inativo).
-  const opcoesProc = useMemo(() => {
-    const todos = procedimentos ?? []
-    return todos.filter((p) => p.ativo || p.id === procedimentoId)
-  }, [procedimentos, procedimentoId])
+  const ativos = (procedimentos ?? []).filter((p) => p.ativo)
+  const duracaoTotal = itens.reduce((s, i) => s + i.duracao_min, 0) || 30
+  const precoTotal = itens.reduce((s, i) => s + i.preco, 0)
 
-  const procEscolhido = procedimentos?.find((p) => p.id === procedimentoId)
-  const duracao = procEscolhido?.duracao_min ?? 30
+  function adicionarProc() {
+    const p = (procedimentos ?? []).find((x) => x.id === procSelId)
+    if (!p) return
+    setItens((l) => [
+      ...l,
+      { procedimento_id: p.id, nome: p.nome, preco: p.preco, duracao_min: p.duracao_min },
+    ])
+    setProcSelId('')
+  }
+  function removerProc(i: number) {
+    setItens((l) => l.filter((_, idx) => idx !== i))
+  }
 
   async function aoEnviar(e: FormEvent) {
     e.preventDefault()
@@ -71,21 +97,25 @@ export function AgendamentoFormPage() {
     if (!data || !hora) return setErro('Informe a data e a hora.')
 
     const inicio = combinarDataHora(data, hora)
-    const fim = new Date(new Date(inicio).getTime() + duracao * 60000).toISOString()
+    const fim = new Date(new Date(inicio).getTime() + duracaoTotal * 60000).toISOString()
     const input = {
       paciente_id: pacienteId,
-      procedimento_id: procedimentoId || null,
+      procedimento_id: itens[0]?.procedimento_id ?? null, // principal = 1º
       inicio,
       fim,
       status,
       observacao: observacao || null,
     }
     try {
+      let agId = id
       if (editando) {
         await atualizar.mutateAsync({ id: id!, input })
       } else {
-        await criar.mutateAsync(input)
+        const novo = await criar.mutateAsync(input)
+        agId = novo.id
       }
+      if (agId) await salvarProcedimentosDaConsulta(agId, itens)
+      qc.invalidateQueries({ queryKey: ['agendamentos'] })
       // Volta para a agenda já no dia da consulta.
       navigate(`/agenda?dia=${data}`, { replace: true })
     } catch {
@@ -128,20 +158,62 @@ export function AgendamentoFormPage() {
           </select>
         </Campo>
 
-        <Campo rotulo="Procedimento">
-          <select
-            value={procedimentoId}
-            onChange={(e) => setProcedimentoId(e.target.value)}
-            className={inputClass}
-          >
-            <option value="">Selecione…</option>
-            {opcoesProc.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.nome} ({p.duracao_min} min)
-              </option>
-            ))}
-          </select>
-        </Campo>
+        <div>
+          <p className="mb-1 font-bold text-slate-700 dark:text-slate-200">Procedimentos</p>
+          <div className="flex items-end gap-2">
+            <select
+              value={procSelId}
+              onChange={(e) => setProcSelId(e.target.value)}
+              className={inputClass}
+            >
+              <option value="">Adicionar procedimento…</option>
+              {ativos.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.nome} ({p.duracao_min} min · {formatReal(p.preco)})
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              onClick={adicionarProc}
+              disabled={!procSelId}
+              className="min-h-[48px] shrink-0 rounded-lg border-2 border-brand-600 px-4 font-bold text-brand-700 disabled:opacity-40"
+            >
+              + Add
+            </button>
+          </div>
+          {itens.length > 0 && (
+            <ul className="mt-2 flex flex-col gap-2">
+              {itens.map((it, i) => (
+                <li
+                  key={i}
+                  className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-2"
+                >
+                  <span className="min-w-0 text-sm">
+                    <b className="text-slate-800 dark:text-slate-100">{it.nome}</b>{' '}
+                    <span className="text-slate-500 dark:text-slate-400">
+                      · {it.duracao_min} min · {formatReal(it.preco)}
+                    </span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => removerProc(i)}
+                    aria-label={`Remover ${it.nome}`}
+                    className="shrink-0 text-red-600"
+                  >
+                    ×
+                  </button>
+                </li>
+              ))}
+              <li className="flex justify-between px-1 text-sm font-bold">
+                <span className="text-slate-500 dark:text-slate-400">Total</span>
+                <span className="text-brand-700">
+                  {duracaoTotal} min · {formatReal(precoTotal)}
+                </span>
+              </li>
+            </ul>
+          )}
+        </div>
 
         <div className="flex gap-3">
           <div className="flex-1">
@@ -160,10 +232,6 @@ export function AgendamentoFormPage() {
             </Campo>
           </div>
         </div>
-
-        <p className="text-sm text-slate-500 dark:text-slate-400">
-          Duração: {duracao} min{procEscolhido ? '' : ' (escolha o procedimento)'}
-        </p>
 
         <Campo rotulo="Status">
           <select
@@ -231,7 +299,7 @@ export function AgendamentoFormPage() {
 
         {editando && (
           <Link
-            to={`/financeiro/novo?agendamento=${id}${pacienteId ? `&paciente=${pacienteId}` : ''}${procEscolhido ? `&valor=${procEscolhido.preco}` : ''}`}
+            to={`/financeiro/novo?agendamento=${id}${pacienteId ? `&paciente=${pacienteId}` : ''}${precoTotal > 0 ? `&valor=${precoTotal}` : ''}`}
             className="flex min-h-[48px] items-center justify-center rounded-lg border-2 border-green-600 px-4 font-bold text-green-700"
           >
             Registrar pagamento
