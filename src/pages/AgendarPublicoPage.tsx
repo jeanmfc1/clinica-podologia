@@ -15,6 +15,7 @@ import {
 } from '../lib/agendarPublico'
 import { BotaoPrimario, Campo, inputClass } from '../components/ui'
 import { DateInputBR } from '../components/DateInputBR'
+import { Calendario } from '../components/Calendario'
 import { TelefoneInput } from '../components/TelefoneInput'
 
 export function AgendarPublicoPage() {
@@ -152,6 +153,11 @@ export function AgendarPublicoPage() {
               </option>
             ))}
           </select>
+          {procedimentos.length === 0 && !erro && (
+            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+              Nenhum serviço disponível no momento.
+            </p>
+          )}
           {proc && (
             <div className="mt-2 flex items-center justify-between rounded-lg bg-brand-50 dark:bg-brand-900/40 px-4 py-3">
               <span className="text-sm text-slate-600 dark:text-slate-300">{proc.duracao_min} min</span>
@@ -162,7 +168,7 @@ export function AgendarPublicoPage() {
 
         {/* 2. Dia e horário */}
         <Secao numero={2} titulo="Escolha o dia e o horário">
-          <DateInputBR value={data} onChange={setData} className={inputClass} />
+          <Calendario value={data} onChange={setData} />
           {procId && data && (
             <div className="mt-3">
               {carregandoSlots ? (
